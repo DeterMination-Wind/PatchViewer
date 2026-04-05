@@ -1,0 +1,69 @@
+apply plugin: "java"
+
+version = '1.0'
+
+group = 'patchviewer2'
+
+sourceSets.main.java.srcDirs = ["src"]
+sourceSets.main.resources.srcDirs = ["assets"]
+
+ext{
+    mindustryVersion = 'v155.4'
+    buildOutputDir = file("C:/Users/华硕/Documents/codex/构建/PatchViewer2")
+}
+
+repositories{
+    mavenLocal()
+    mavenCentral()
+    maven{ url = 'https://jitpack.io' }
+}
+
+java{
+    targetCompatibility = 8
+    sourceCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach{
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:deprecation', '--release', '8']
+    options.fork = true
+}
+
+dependencies{
+    compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
+    compileOnly "com.github.Anuken.Arc:flabel:$mindustryVersion"
+    compileOnly "com.github.Anuken.Arc:freetype:$mindustryVersion"
+    compileOnly "com.github.Anuken.Arc:g3d:$mindustryVersion"
+    compileOnly "com.github.Anuken.Arc:fx:$mindustryVersion"
+    compileOnly "com.github.Anuken.Arc:arcnet:$mindustryVersion"
+    compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
+}
+
+jar{
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveFileName = "${project.name}Desktop.jar"
+
+    from(projectDir){
+        include "mod.hjson"
+    }
+
+    from("assets/"){
+        include "**"
+    }
+}
+
+tasks.register('deploy', Jar){
+    dependsOn jar
+    archiveFileName = "${project.name}.jar"
+
+    from{ zipTree("build/libs/${project.name}Desktop.jar") }
+
+    doLast{
+        buildOutputDir.mkdirs()
+        copy{
+            from archiveFile.get().asFile
+            into buildOutputDir
+            rename { "PatchViewer2.jar" }
+        }
+    }
+}

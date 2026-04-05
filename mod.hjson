@@ -1,0 +1,8 @@
+name: PatchViewer2
+author: DeterMination
+main: patchviewer2.PatchViewer2Mod
+version: 1.0
+description: Show datapatch before/after values inline inside core database stat rows.
+minGameVersion: 155
+java: true
+hidden: true
