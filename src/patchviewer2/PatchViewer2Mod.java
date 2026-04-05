@@ -24,9 +24,17 @@ import mindustry.type.Weapon;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.ContentInfoDialog;
 import mindustry.world.Block;
+import mindustry.world.blocks.defense.ForceProjector;
+import mindustry.world.blocks.defense.MendProjector;
+import mindustry.world.blocks.defense.OverdriveProjector;
+import mindustry.world.blocks.defense.RegenProjector;
+import mindustry.world.blocks.defense.ShieldWall;
+import mindustry.world.blocks.defense.ShockwaveTower;
+import mindustry.world.blocks.defense.turrets.TractorBeamTurret;
 import mindustry.world.blocks.distribution.MassDriver;
 import mindustry.world.blocks.payloads.PayloadMassDriver;
 import mindustry.world.blocks.power.PowerNode;
+import mindustry.world.blocks.production.BeamDrill;
 import mindustry.world.blocks.production.Drill;
 import mindustry.world.blocks.production.Pump;
 import mindustry.world.blocks.units.RepairTurret;
@@ -292,60 +300,11 @@ public class PatchViewer2Mod extends Mod{
         out.details = content.details;
 
         if(content instanceof Block){
-            Block block = (Block)content;
-            String general = bundle("category.general", "基础");
-            addSectionRow(out, general, Stat.health.localized(), String.valueOf(block.health));
-            addSectionRow(out, general, Stat.size.localized(), block.size + "x" + block.size);
-            addSectionRow(out, general, Stat.buildTime.localized(), Strings.autoFixed(block.buildTime / 60f, 3) + " 秒");
-            addSectionRow(out, general, "能否超速", block.canOverdrive ? "是" : "否");
-            if(block.armor > 0f) addSectionRow(out, general, Stat.armor.localized(), Strings.autoFixed(block.armor, 1));
-            if(block.itemCapacity > 0) addSectionRow(out, bundle("category.items", "物品"), Stat.itemCapacity.localized(), String.valueOf(block.itemCapacity));
-            if(block.requirements != null && block.requirements.length > 0){
-                addSectionRow(out, general, Stat.buildCost.localized(), formatItemStacks(block.requirements));
-            }
-            if(block.hasPower && block.consPower != null){
-                if(block.consPower.usage > 0f){
-                    addSectionRow(out, bundle("category.power", "电力"), "消耗电力", "⚡ " + Strings.autoFixed(block.consPower.usage * 60f, 0) + " 电力/秒");
-                }
-                if(block.consPower.capacity > 0f){
-                    addSectionRow(out, bundle("category.power", "电力"), Stat.powerCapacity.localized(), Strings.autoFixed(block.consPower.capacity, 0));
-                }
-            }
-            if(block.hasLiquids){
-                addSectionRow(out, bundle("category.liquids", "液体"), "液体容量", Strings.autoFixed(block.liquidCapacity, 0) + " 液体");
-            }
-            if(block instanceof PowerNode){
-                PowerNode node = (PowerNode)block;
-                addSectionRow(out, bundle("category.power", "电力"), Stat.powerRange.localized(), Strings.autoFixed(node.laserRange / Vars.tilesize, 3) + " 格");
-                addSectionRow(out, bundle("category.power", "电力"), Stat.powerConnections.localized(), String.valueOf(node.maxNodes));
-            }
-            if(block instanceof MassDriver){
-                MassDriver driver = (MassDriver)block;
-                addSectionRow(out, bundle("category.function", "功能"), Stat.shootRange.localized(), Strings.autoFixed(driver.range / Vars.tilesize, 3) + " 格");
-                addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(60f / driver.reload, 2) + " /秒");
-            }
-            if(block instanceof PayloadMassDriver){
-                PayloadMassDriver driver = (PayloadMassDriver)block;
-                addSectionRow(out, bundle("category.support", "支持"), Stat.payloadCapacity.localized(), Strings.autoFixed(driver.maxPayloadSize, 2));
-                addSectionRow(out, bundle("category.function", "功能"), Stat.shootRange.localized(), Strings.autoFixed(driver.range / Vars.tilesize, 3) + " 格");
-                addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(60f / (driver.chargeTime + driver.reload), 2) + " /秒");
-            }
-            if(block instanceof Drill){
-                Drill drill = (Drill)block;
-                addSectionRow(out, bundle("category.crafting", "生产"), Stat.drillSpeed.localized(), Strings.autoFixed(60f / drill.drillTime, 2) + " /秒");
-            }
-            if(block instanceof Pump){
-                Pump pump = (Pump)block;
-                addSectionRow(out, bundle("category.crafting", "生产"), Stat.output.localized(), Strings.autoFixed(pump.pumpAmount * 60f, 2) + " /秒");
-            }
+            snapshotBlock(out, (Block)content);
         }
 
-        if(content instanceof RepairTurret){
-            RepairTurret turret = (RepairTurret)content;
-            addSectionRow(out, bundle("category.function", "功能"), "修理速度", Strings.autoFixed(turret.repairSpeed * 60f, 0) + " /秒");
-            addSectionRow(out, bundle("category.function", "功能"), "范围", Strings.autoFixed(turret.repairRadius / Vars.tilesize, 3) + " 格");
-            addSectionRow(out, bundle("category.optional", "可选"), "冷却液用量", Strings.autoFixed(turret.coolantUse * 60f, 2) + " /秒");
-            addSectionRow(out, bundle("category.optional", "可选"), "冷却倍率", Strings.autoFixed(turret.coolantMultiplier, 2));
+        if(content instanceof UnitType){
+            snapshotUnit(out, (UnitType)content);
         }
 
         content.checkStats();
@@ -366,39 +325,143 @@ public class PatchViewer2Mod extends Mod{
         }
 
         if(content instanceof UnitType){
-            UnitType unit = (UnitType)content;
-            String movement = bundle("category.movement", "移动");
-            addSectionRow(out, movement, Stat.health.localized(), Strings.autoFixed(unit.health, 0));
-            addSectionRow(out, movement, Stat.speed.localized(), Strings.autoFixed(unit.speed * 60f / Vars.tilesize, 2));
-            addSectionRow(out, movement, Stat.itemCapacity.localized(), String.valueOf(unit.itemCapacity));
-            addSectionRow(out, movement, Stat.range.localized(), Strings.autoFixed(unit.maxRange / Vars.tilesize, 1) + " 格");
-            if(unit.armor > 0f) addSectionRow(out, movement, Stat.armor.localized(), Strings.autoFixed(unit.armor, 1));
-            if(unit.payloadCapacity > 0f) addSectionRow(out, bundle("category.support", "支持"), Stat.payloadCapacity.localized(), Strings.autoFixed(unit.payloadCapacity, 2));
-
-            Seq<Weapon> weapons = unit.weapons;
-            for(int i = 0; i < weapons.size; i++){
-                Weapon weapon = weapons.get(i);
-                if(weapon.flipSprite || !weapon.hasStats(unit)) continue;
-                WeaponSnapshot snapshot = new WeaponSnapshot();
-                snapshot.key = i;
-                snapshot.name = weapon.name == null || weapon.name.isEmpty() ? "weapon-" + i : weapon.name;
-                snapshot.rows.add(new RowSnapshot("武器范围", Strings.autoFixed(weapon.bullet.range / 8f, 1) + " 格"));
-                if(weapon.rotate){
-                    snapshot.rows.add(new RowSnapshot("旋转速度", String.format("%.0f °/s", weapon.rotateSpeed * 60f)));
-                }
-                snapshot.rows.add(new RowSnapshot("瞄准角", Strings.autoFixed(weapon.shootCone, 1) + "°"));
-                if(weapon.inaccuracy > 0f){
-                    snapshot.rows.add(new RowSnapshot(Stat.inaccuracy.localized(), Strings.autoFixed(weapon.inaccuracy, 1) + "°"));
-                }
-                if(!weapon.alwaysContinuous && weapon.reload > 0 && !weapon.bullet.killShooter){
-                    snapshot.rows.add(new RowSnapshot(Stat.reload.localized(), (weapon.mirror ? "2x " : "") + Strings.autoFixed(60f / weapon.reload * weapon.shoot.shots, 2) + " /秒"));
-                }
-                snapshot.rows.add(new RowSnapshot(Stat.damage.localized(), Strings.autoFixed(weapon.bullet.damage, 2)));
-                out.weapons.add(snapshot);
-            }
+            snapshotWeapons(out, (UnitType)content);
         }
 
         return out;
+    }
+
+    private void snapshotBlock(ContentSnapshot out, Block block){
+        String general = bundle("category.general", "基础");
+        addSectionRow(out, general, Stat.health.localized(), String.valueOf(block.health));
+        addSectionRow(out, general, Stat.size.localized(), block.size + "x" + block.size);
+        addSectionRow(out, general, Stat.buildTime.localized(), Strings.autoFixed(block.buildTime / 60f, 3) + " 秒");
+        addSectionRow(out, general, "能否超速", block.canOverdrive ? "是" : "否");
+        if(block.armor > 0f) addSectionRow(out, general, Stat.armor.localized(), Strings.autoFixed(block.armor, 1));
+        if(block.itemCapacity > 0) addSectionRow(out, bundle("category.items", "物品"), Stat.itemCapacity.localized(), String.valueOf(block.itemCapacity));
+        if(block.requirements != null && block.requirements.length > 0){
+            addSectionRow(out, general, Stat.buildCost.localized(), formatItemStacks(block.requirements));
+        }
+        if(block.hasPower && block.consPower != null){
+            if(block.consPower.usage > 0f){
+                addSectionRow(out, bundle("category.power", "电力"), "消耗电力", "⚡ " + Strings.autoFixed(block.consPower.usage * 60f, 0) + " 电力/秒");
+            }
+            if(block.consPower.capacity > 0f){
+                addSectionRow(out, bundle("category.power", "电力"), Stat.powerCapacity.localized(), Strings.autoFixed(block.consPower.capacity, 0));
+            }
+        }
+        if(block.hasLiquids){
+            addSectionRow(out, bundle("category.liquids", "液体"), "液体容量", Strings.autoFixed(block.liquidCapacity, 0) + " 液体");
+        }
+        if(block instanceof PowerNode){
+            PowerNode node = (PowerNode)block;
+            addSectionRow(out, bundle("category.power", "电力"), Stat.powerRange.localized(), Strings.autoFixed(node.laserRange / Vars.tilesize, 3) + " 格");
+            addSectionRow(out, bundle("category.power", "电力"), Stat.powerConnections.localized(), String.valueOf(node.maxNodes));
+        }
+        if(block instanceof MassDriver){
+            MassDriver driver = (MassDriver)block;
+            addSectionRow(out, bundle("category.function", "功能"), Stat.shootRange.localized(), Strings.autoFixed(driver.range / Vars.tilesize, 3) + " 格");
+            addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(60f / driver.reload, 2) + " /秒");
+        }
+        if(block instanceof PayloadMassDriver){
+            PayloadMassDriver driver = (PayloadMassDriver)block;
+            addSectionRow(out, bundle("category.support", "支持"), Stat.payloadCapacity.localized(), Strings.autoFixed(driver.maxPayloadSize, 2));
+            addSectionRow(out, bundle("category.function", "功能"), Stat.shootRange.localized(), Strings.autoFixed(driver.range / Vars.tilesize, 3) + " 格");
+            addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(60f / (driver.chargeTime + driver.reload), 2) + " /秒");
+        }
+        if(block instanceof Drill){
+            Drill drill = (Drill)block;
+            addSectionRow(out, bundle("category.crafting", "生产"), Stat.drillSpeed.localized(), Strings.autoFixed(60f / drill.drillTime, 2) + " /秒");
+        }
+        if(block instanceof BeamDrill){
+            BeamDrill drill = (BeamDrill)block;
+            addSectionRow(out, bundle("category.crafting", "生产"), Stat.drillSpeed.localized(), Strings.autoFixed(60f / drill.drillTime, 2) + " /秒");
+        }
+        if(block instanceof Pump){
+            Pump pump = (Pump)block;
+            addSectionRow(out, bundle("category.crafting", "生产"), Stat.output.localized(), Strings.autoFixed(pump.pumpAmount * 60f, 2) + " /秒");
+        }
+        if(block instanceof RepairTurret){
+            RepairTurret turret = (RepairTurret)block;
+            addSectionRow(out, bundle("category.function", "功能"), "修理速度", Strings.autoFixed(turret.repairSpeed * 60f, 0) + " /秒");
+            addSectionRow(out, bundle("category.function", "功能"), "范围", Strings.autoFixed(turret.repairRadius / Vars.tilesize, 3) + " 格");
+            addSectionRow(out, bundle("category.optional", "可选"), "冷却液用量", Strings.autoFixed(turret.coolantUse * 60f, 2) + " /秒");
+            addSectionRow(out, bundle("category.optional", "可选"), "冷却倍率", Strings.autoFixed(turret.coolantMultiplier, 2));
+        }
+        if(block instanceof ForceProjector){
+            ForceProjector projector = (ForceProjector)block;
+            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(projector.radius / Vars.tilesize, 3) + " 格");
+            addSectionRow(out, bundle("category.function", "功能"), Stat.shieldHealth.localized(), Strings.autoFixed(projector.shieldHealth, 0));
+            addSectionRow(out, bundle("category.function", "功能"), Stat.cooldownTime.localized(), Strings.autoFixed(projector.shieldHealth / projector.cooldownBrokenBase / 60f, 2) + " 秒");
+        }
+        if(block instanceof MendProjector){
+            MendProjector projector = (MendProjector)block;
+            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(projector.range / Vars.tilesize, 3) + " 格");
+            addSectionRow(out, bundle("category.function", "功能"), "修复百分比", Strings.autoFixed(projector.healPercent, 1) + "%");
+            addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(projector.reload / 60f, 2) + " 秒");
+        }
+        if(block instanceof OverdriveProjector){
+            OverdriveProjector projector = (OverdriveProjector)block;
+            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(projector.range / Vars.tilesize, 3) + " 格");
+            addSectionRow(out, bundle("category.function", "功能"), Stat.speedIncrease.localized(), "+" + (int)(projector.speedBoost * 100f - 100f) + "%");
+            addSectionRow(out, bundle("category.crafting", "生产"), Stat.productionTime.localized(), Strings.autoFixed(projector.useTime / 60f, 2) + " 秒");
+        }
+        if(block instanceof RegenProjector){
+            RegenProjector projector = (RegenProjector)block;
+            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(projector.range, 3) + " 格");
+            addSectionRow(out, bundle("category.function", "功能"), "修复速度", Strings.autoFixed(projector.healPercent * 60f, 1) + "%/秒");
+        }
+        if(block instanceof ShieldWall){
+            ShieldWall wall = (ShieldWall)block;
+            addSectionRow(out, bundle("category.function", "功能"), Stat.shieldHealth.localized(), Strings.autoFixed(wall.shieldHealth, 0));
+        }
+        if(block instanceof ShockwaveTower){
+            ShockwaveTower tower = (ShockwaveTower)block;
+            addSectionRow(out, bundle("category.function", "功能"), Stat.damage.localized(), Strings.autoFixed(tower.bulletDamage, 0));
+            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(tower.range / Vars.tilesize, 3) + " 格");
+            addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(60f / tower.reload, 2) + " /秒");
+        }
+        if(block instanceof TractorBeamTurret){
+            TractorBeamTurret turret = (TractorBeamTurret)block;
+            addSectionRow(out, bundle("category.function", "功能"), Stat.targetsAir.localized(), turret.targetAir ? "是" : "否");
+            addSectionRow(out, bundle("category.function", "功能"), Stat.targetsGround.localized(), turret.targetGround ? "是" : "否");
+            if(turret.damage > 0f) addSectionRow(out, bundle("category.function", "功能"), Stat.damage.localized(), Strings.autoFixed(turret.damage * 60f, 2) + " /秒");
+            addSectionRow(out, bundle("category.optional", "可选"), "冷却倍率", Strings.autoFixed(turret.coolantMultiplier, 2));
+        }
+    }
+
+    private void snapshotUnit(ContentSnapshot out, UnitType unit){
+        String movement = bundle("category.movement", "移动");
+        addSectionRow(out, movement, Stat.health.localized(), Strings.autoFixed(unit.health, 0));
+        addSectionRow(out, movement, Stat.speed.localized(), Strings.autoFixed(unit.speed * 60f / Vars.tilesize, 2));
+        addSectionRow(out, movement, Stat.itemCapacity.localized(), String.valueOf(unit.itemCapacity));
+        addSectionRow(out, movement, Stat.range.localized(), Strings.autoFixed(unit.maxRange / Vars.tilesize, 1) + " 格");
+        if(unit.armor > 0f) addSectionRow(out, movement, Stat.armor.localized(), Strings.autoFixed(unit.armor, 1));
+        if(unit.payloadCapacity > 0f) addSectionRow(out, bundle("category.support", "支持"), Stat.payloadCapacity.localized(), Strings.autoFixed(unit.payloadCapacity, 2));
+    }
+
+    private void snapshotWeapons(ContentSnapshot out, UnitType unit){
+        Seq<Weapon> weapons = unit.weapons;
+        for(int i = 0; i < weapons.size; i++){
+            Weapon weapon = weapons.get(i);
+            if(weapon.flipSprite || !weapon.hasStats(unit)) continue;
+            WeaponSnapshot snapshot = new WeaponSnapshot();
+            snapshot.key = i;
+            snapshot.name = weapon.name == null || weapon.name.isEmpty() ? "weapon-" + i : weapon.name;
+            snapshot.rows.add(new RowSnapshot("武器范围", Strings.autoFixed(weapon.bullet.range / 8f, 1) + " 格"));
+            if(weapon.rotate){
+                snapshot.rows.add(new RowSnapshot("旋转速度", String.format("%.0f °/s", weapon.rotateSpeed * 60f)));
+            }
+            snapshot.rows.add(new RowSnapshot("瞄准角", Strings.autoFixed(weapon.shootCone, 1) + "°"));
+            if(weapon.inaccuracy > 0f){
+                snapshot.rows.add(new RowSnapshot(Stat.inaccuracy.localized(), Strings.autoFixed(weapon.inaccuracy, 1) + "°"));
+            }
+            if(!weapon.alwaysContinuous && weapon.reload > 0 && !weapon.bullet.killShooter){
+                snapshot.rows.add(new RowSnapshot(Stat.reload.localized(), (weapon.mirror ? "2x " : "") + Strings.autoFixed(60f / weapon.reload * weapon.shoot.shots, 2) + " /秒"));
+            }
+            snapshot.rows.add(new RowSnapshot(Stat.damage.localized(), Strings.autoFixed(weapon.bullet.damage, 2)));
+            out.weapons.add(snapshot);
+        }
     }
 
     private void addSectionRow(ContentSnapshot out, String sectionTitle, String label, String value){
