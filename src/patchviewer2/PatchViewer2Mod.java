@@ -24,6 +24,11 @@ import mindustry.type.Weapon;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.ContentInfoDialog;
 import mindustry.world.Block;
+import mindustry.world.blocks.distribution.MassDriver;
+import mindustry.world.blocks.payloads.PayloadMassDriver;
+import mindustry.world.blocks.power.PowerNode;
+import mindustry.world.blocks.production.Drill;
+import mindustry.world.blocks.production.Pump;
 import mindustry.world.blocks.units.RepairTurret;
 import mindustry.world.meta.Stat;
 import mindustry.world.meta.StatCat;
@@ -288,21 +293,59 @@ public class PatchViewer2Mod extends Mod{
 
         if(content instanceof Block){
             Block block = (Block)content;
+            String general = bundle("category.general", "基础");
+            addSectionRow(out, general, Stat.health.localized(), String.valueOf(block.health));
+            addSectionRow(out, general, Stat.size.localized(), block.size + "x" + block.size);
+            addSectionRow(out, general, Stat.buildTime.localized(), Strings.autoFixed(block.buildTime / 60f, 3) + " 秒");
+            addSectionRow(out, general, "能否超速", block.canOverdrive ? "是" : "否");
+            if(block.armor > 0f) addSectionRow(out, general, Stat.armor.localized(), Strings.autoFixed(block.armor, 1));
+            if(block.itemCapacity > 0) addSectionRow(out, bundle("category.items", "物品"), Stat.itemCapacity.localized(), String.valueOf(block.itemCapacity));
             if(block.requirements != null && block.requirements.length > 0){
-                addSectionRow(out, bundle("category.general", "基础"), Stat.buildCost.localized(), formatItemStacks(block.requirements));
+                addSectionRow(out, general, Stat.buildCost.localized(), formatItemStacks(block.requirements));
             }
-            if(block.hasPower && block.consPower != null && block.consPower.usage > 0f){
-                addSectionRow(out, bundle("category.power", "电力"), block.consPower.buffered ? Stat.powerCapacity.localized() : Stat.powerUse.localized(), "⚡ " + Strings.autoFixed(block.consPower.usage * 60f, 0) + " 电力/秒");
+            if(block.hasPower && block.consPower != null){
+                if(block.consPower.usage > 0f){
+                    addSectionRow(out, bundle("category.power", "电力"), "消耗电力", "⚡ " + Strings.autoFixed(block.consPower.usage * 60f, 0) + " 电力/秒");
+                }
+                if(block.consPower.capacity > 0f){
+                    addSectionRow(out, bundle("category.power", "电力"), Stat.powerCapacity.localized(), Strings.autoFixed(block.consPower.capacity, 0));
+                }
             }
             if(block.hasLiquids){
-                addSectionRow(out, bundle("category.liquids", "液体"), Stat.liquidCapacity.localized(), Strings.autoFixed(block.liquidCapacity, 0) + " 液体");
+                addSectionRow(out, bundle("category.liquids", "液体"), "液体容量", Strings.autoFixed(block.liquidCapacity, 0) + " 液体");
+            }
+            if(block instanceof PowerNode){
+                PowerNode node = (PowerNode)block;
+                addSectionRow(out, bundle("category.power", "电力"), Stat.powerRange.localized(), Strings.autoFixed(node.laserRange / Vars.tilesize, 3) + " 格");
+                addSectionRow(out, bundle("category.power", "电力"), Stat.powerConnections.localized(), String.valueOf(node.maxNodes));
+            }
+            if(block instanceof MassDriver){
+                MassDriver driver = (MassDriver)block;
+                addSectionRow(out, bundle("category.function", "功能"), Stat.shootRange.localized(), Strings.autoFixed(driver.range / Vars.tilesize, 3) + " 格");
+                addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(60f / driver.reload, 2) + " /秒");
+            }
+            if(block instanceof PayloadMassDriver){
+                PayloadMassDriver driver = (PayloadMassDriver)block;
+                addSectionRow(out, bundle("category.support", "支持"), Stat.payloadCapacity.localized(), Strings.autoFixed(driver.maxPayloadSize, 2));
+                addSectionRow(out, bundle("category.function", "功能"), Stat.shootRange.localized(), Strings.autoFixed(driver.range / Vars.tilesize, 3) + " 格");
+                addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(60f / (driver.chargeTime + driver.reload), 2) + " /秒");
+            }
+            if(block instanceof Drill){
+                Drill drill = (Drill)block;
+                addSectionRow(out, bundle("category.crafting", "生产"), Stat.drillSpeed.localized(), Strings.autoFixed(60f / drill.drillTime, 2) + " /秒");
+            }
+            if(block instanceof Pump){
+                Pump pump = (Pump)block;
+                addSectionRow(out, bundle("category.crafting", "生产"), Stat.output.localized(), Strings.autoFixed(pump.pumpAmount * 60f, 2) + " /秒");
             }
         }
 
         if(content instanceof RepairTurret){
             RepairTurret turret = (RepairTurret)content;
-            addSectionRow(out, bundle("category.function", "功能"), Stat.repairSpeed.localized(), Strings.autoFixed(turret.repairSpeed * 60f, 0) + " /秒");
-            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(turret.repairRadius / Vars.tilesize, 3) + " 格");
+            addSectionRow(out, bundle("category.function", "功能"), "修理速度", Strings.autoFixed(turret.repairSpeed * 60f, 0) + " /秒");
+            addSectionRow(out, bundle("category.function", "功能"), "范围", Strings.autoFixed(turret.repairRadius / Vars.tilesize, 3) + " 格");
+            addSectionRow(out, bundle("category.optional", "可选"), "冷却液用量", Strings.autoFixed(turret.coolantUse * 60f, 2) + " /秒");
+            addSectionRow(out, bundle("category.optional", "可选"), "冷却倍率", Strings.autoFixed(turret.coolantMultiplier, 2));
         }
 
         content.checkStats();
@@ -323,16 +366,29 @@ public class PatchViewer2Mod extends Mod{
         }
 
         if(content instanceof UnitType){
-            Seq<Weapon> weapons = ((UnitType)content).weapons;
+            UnitType unit = (UnitType)content;
+            String movement = bundle("category.movement", "移动");
+            addSectionRow(out, movement, Stat.health.localized(), Strings.autoFixed(unit.health, 0));
+            addSectionRow(out, movement, Stat.speed.localized(), Strings.autoFixed(unit.speed * 60f / Vars.tilesize, 2));
+            addSectionRow(out, movement, Stat.itemCapacity.localized(), String.valueOf(unit.itemCapacity));
+            addSectionRow(out, movement, Stat.range.localized(), Strings.autoFixed(unit.maxRange / Vars.tilesize, 1) + " 格");
+            if(unit.armor > 0f) addSectionRow(out, movement, Stat.armor.localized(), Strings.autoFixed(unit.armor, 1));
+            if(unit.payloadCapacity > 0f) addSectionRow(out, bundle("category.support", "支持"), Stat.payloadCapacity.localized(), Strings.autoFixed(unit.payloadCapacity, 2));
+
+            Seq<Weapon> weapons = unit.weapons;
             for(int i = 0; i < weapons.size; i++){
                 Weapon weapon = weapons.get(i);
-                if(weapon.flipSprite || !weapon.hasStats((UnitType)content)) continue;
+                if(weapon.flipSprite || !weapon.hasStats(unit)) continue;
                 WeaponSnapshot snapshot = new WeaponSnapshot();
                 snapshot.key = i;
                 snapshot.name = weapon.name == null || weapon.name.isEmpty() ? "weapon-" + i : weapon.name;
                 snapshot.rows.add(new RowSnapshot("武器范围", Strings.autoFixed(weapon.bullet.range / 8f, 1) + " 格"));
                 if(weapon.rotate){
                     snapshot.rows.add(new RowSnapshot("旋转速度", String.format("%.0f °/s", weapon.rotateSpeed * 60f)));
+                }
+                snapshot.rows.add(new RowSnapshot("瞄准角", Strings.autoFixed(weapon.shootCone, 1) + "°"));
+                if(weapon.inaccuracy > 0f){
+                    snapshot.rows.add(new RowSnapshot(Stat.inaccuracy.localized(), Strings.autoFixed(weapon.inaccuracy, 1) + "°"));
                 }
                 if(!weapon.alwaysContinuous && weapon.reload > 0 && !weapon.bullet.killShooter){
                     snapshot.rows.add(new RowSnapshot(Stat.reload.localized(), (weapon.mirror ? "2x " : "") + Strings.autoFixed(60f / weapon.reload * weapon.shoot.shots, 2) + " /秒"));
@@ -346,6 +402,7 @@ public class PatchViewer2Mod extends Mod{
     }
 
     private void addSectionRow(ContentSnapshot out, String sectionTitle, String label, String value){
+        if(sectionTitle == null || label == null || value == null || value.trim().isEmpty()) return;
         SectionSnapshot section = out.sectionByTitle(sectionTitle);
         if(section == null){
             section = new SectionSnapshot();
