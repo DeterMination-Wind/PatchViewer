@@ -161,8 +161,8 @@ public class PatchViewerMod extends Mod{
         if(!baselineCaptured) captureBaselineAtStartup();
         if(Vars.state == null || Vars.state.patcher == null) return;
 
-        Seq<UnlockableContent> patched = collectPatchedContents();
-        for(UnlockableContent content : patched){
+        Seq<UnlockableContent> all = collectAllContents();
+        for(UnlockableContent content : all){
             ContentSnapshot before = baselineSnapshots.get(content);
             ContentSnapshot after = snapshot(content);
             if(after != null) afterSnapshots.put(content, after);
@@ -181,24 +181,6 @@ public class PatchViewerMod extends Mod{
             if(seq == null) continue;
             for(Content raw : seq){
                 if(raw instanceof UnlockableContent) result.add((UnlockableContent)raw);
-            }
-        }
-        return result;
-    }
-
-    private Seq<UnlockableContent> collectPatchedContents(){
-        Seq<UnlockableContent> result = new Seq<>();
-        if(Vars.state == null || Vars.state.patcher == null) return result;
-
-        for(ContentType type : ContentType.all){
-            if(type.name().indexOf('_') != -1) continue;
-            Seq<Content> seq = Vars.content.getBy(type);
-            if(seq == null) continue;
-            for(Content raw : seq){
-                if(raw instanceof UnlockableContent){
-                    UnlockableContent content = (UnlockableContent)raw;
-                    if(Vars.state.patcher.isPatched(content)) result.add(content);
-                }
             }
         }
         return result;
@@ -940,7 +922,7 @@ public class PatchViewerMod extends Mod{
         });
         table.row();
 
-        if(Vars.state.isGame() && Vars.state.patcher != null && Vars.state.patcher.isPatched(content)){
+        if(Vars.state.isGame() && diffsByContent.containsKey(content)){
             table.table(t -> {
                 t.image(Icon.info).color(Pal.lightishGray);
                 t.add("@database.patched").color(Pal.lightishGray).padLeft(4f);
@@ -1012,9 +994,10 @@ public class PatchViewerMod extends Mod{
             table.row();
         }
 
-        if(content.credit != null){
+        String credit = Reflector.getString(content, "credit");
+        if(credit != null){
             table.row();
-            table.add("Created by: " + content.credit).color(Color.gray).padTop(40f).row();
+            table.add("Created by: " + credit).color(Color.gray).padTop(40f).row();
         }
 
         if(Core.settings.getBool("console")){
@@ -1396,6 +1379,11 @@ public class PatchViewerMod extends Mod{
             }catch(Throwable ignored){
             }
             return null;
+        }
+
+        static String getString(Object object, String fieldName){
+            Object value = get(object, fieldName);
+            return value == null ? null : String.valueOf(value);
         }
     }
 
