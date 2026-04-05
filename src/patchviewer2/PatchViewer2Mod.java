@@ -37,7 +37,6 @@ import mindustry.world.blocks.power.PowerNode;
 import mindustry.world.blocks.production.BeamDrill;
 import mindustry.world.blocks.production.Drill;
 import mindustry.world.blocks.production.Pump;
-import mindustry.world.blocks.units.RepairTurret;
 import mindustry.world.meta.Stat;
 import mindustry.world.meta.StatCat;
 import mindustry.world.meta.StatValue;
@@ -353,80 +352,35 @@ public class PatchViewer2Mod extends Mod{
         if(block.hasLiquids){
             addSectionRow(out, bundle("category.liquids", "液体"), "液体容量", Strings.autoFixed(block.liquidCapacity, 0) + " 液体");
         }
-        if(block instanceof PowerNode){
-            PowerNode node = (PowerNode)block;
-            addSectionRow(out, bundle("category.power", "电力"), Stat.powerRange.localized(), Strings.autoFixed(node.laserRange / Vars.tilesize, 3) + " 格");
-            addSectionRow(out, bundle("category.power", "电力"), Stat.powerConnections.localized(), String.valueOf(node.maxNodes));
-        }
-        if(block instanceof MassDriver){
-            MassDriver driver = (MassDriver)block;
-            addSectionRow(out, bundle("category.function", "功能"), Stat.shootRange.localized(), Strings.autoFixed(driver.range / Vars.tilesize, 3) + " 格");
-            addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(60f / driver.reload, 2) + " /秒");
-        }
-        if(block instanceof PayloadMassDriver){
-            PayloadMassDriver driver = (PayloadMassDriver)block;
-            addSectionRow(out, bundle("category.support", "支持"), Stat.payloadCapacity.localized(), Strings.autoFixed(driver.maxPayloadSize, 2));
-            addSectionRow(out, bundle("category.function", "功能"), Stat.shootRange.localized(), Strings.autoFixed(driver.range / Vars.tilesize, 3) + " 格");
-            addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(60f / (driver.chargeTime + driver.reload), 2) + " /秒");
-        }
-        if(block instanceof Drill){
-            Drill drill = (Drill)block;
-            addSectionRow(out, bundle("category.crafting", "生产"), Stat.drillSpeed.localized(), Strings.autoFixed(60f / drill.drillTime, 2) + " /秒");
-        }
-        if(block instanceof BeamDrill){
-            BeamDrill drill = (BeamDrill)block;
-            addSectionRow(out, bundle("category.crafting", "生产"), Stat.drillSpeed.localized(), Strings.autoFixed(60f / drill.drillTime, 2) + " /秒");
-        }
-        if(block instanceof Pump){
-            Pump pump = (Pump)block;
-            addSectionRow(out, bundle("category.crafting", "生产"), Stat.output.localized(), Strings.autoFixed(pump.pumpAmount * 60f, 2) + " /秒");
-        }
-        if(block instanceof RepairTurret){
-            RepairTurret turret = (RepairTurret)block;
-            addSectionRow(out, bundle("category.function", "功能"), "修理速度", Strings.autoFixed(turret.repairSpeed * 60f, 0) + " /秒");
-            addSectionRow(out, bundle("category.function", "功能"), "范围", Strings.autoFixed(turret.repairRadius / Vars.tilesize, 3) + " 格");
-            addSectionRow(out, bundle("category.optional", "可选"), "冷却液用量", Strings.autoFixed(turret.coolantUse * 60f, 2) + " /秒");
-            addSectionRow(out, bundle("category.optional", "可选"), "冷却倍率", Strings.autoFixed(turret.coolantMultiplier, 2));
-        }
-        if(block instanceof ForceProjector){
-            ForceProjector projector = (ForceProjector)block;
-            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(projector.radius / Vars.tilesize, 3) + " 格");
-            addSectionRow(out, bundle("category.function", "功能"), Stat.shieldHealth.localized(), Strings.autoFixed(projector.shieldHealth, 0));
-            addSectionRow(out, bundle("category.function", "功能"), Stat.cooldownTime.localized(), Strings.autoFixed(projector.shieldHealth / projector.cooldownBrokenBase / 60f, 2) + " 秒");
-        }
-        if(block instanceof MendProjector){
-            MendProjector projector = (MendProjector)block;
-            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(projector.range / Vars.tilesize, 3) + " 格");
-            addSectionRow(out, bundle("category.function", "功能"), "修复百分比", Strings.autoFixed(projector.healPercent, 1) + "%");
-            addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(projector.reload / 60f, 2) + " 秒");
-        }
-        if(block instanceof OverdriveProjector){
-            OverdriveProjector projector = (OverdriveProjector)block;
-            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(projector.range / Vars.tilesize, 3) + " 格");
-            addSectionRow(out, bundle("category.function", "功能"), Stat.speedIncrease.localized(), "+" + (int)(projector.speedBoost * 100f - 100f) + "%");
-            addSectionRow(out, bundle("category.crafting", "生产"), Stat.productionTime.localized(), Strings.autoFixed(projector.useTime / 60f, 2) + " 秒");
-        }
-        if(block instanceof RegenProjector){
-            RegenProjector projector = (RegenProjector)block;
-            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(projector.range, 3) + " 格");
-            addSectionRow(out, bundle("category.function", "功能"), "修复速度", Strings.autoFixed(projector.healPercent * 60f, 1) + "%/秒");
-        }
-        if(block instanceof ShieldWall){
-            ShieldWall wall = (ShieldWall)block;
-            addSectionRow(out, bundle("category.function", "功能"), Stat.shieldHealth.localized(), Strings.autoFixed(wall.shieldHealth, 0));
-        }
-        if(block instanceof ShockwaveTower){
-            ShockwaveTower tower = (ShockwaveTower)block;
-            addSectionRow(out, bundle("category.function", "功能"), Stat.damage.localized(), Strings.autoFixed(tower.bulletDamage, 0));
-            addSectionRow(out, bundle("category.function", "功能"), Stat.range.localized(), Strings.autoFixed(tower.range / Vars.tilesize, 3) + " 格");
-            addSectionRow(out, bundle("category.function", "功能"), Stat.reload.localized(), Strings.autoFixed(60f / tower.reload, 2) + " /秒");
-        }
-        if(block instanceof TractorBeamTurret){
-            TractorBeamTurret turret = (TractorBeamTurret)block;
-            addSectionRow(out, bundle("category.function", "功能"), Stat.targetsAir.localized(), turret.targetAir ? "是" : "否");
-            addSectionRow(out, bundle("category.function", "功能"), Stat.targetsGround.localized(), turret.targetGround ? "是" : "否");
-            if(turret.damage > 0f) addSectionRow(out, bundle("category.function", "功能"), Stat.damage.localized(), Strings.autoFixed(turret.damage * 60f, 2) + " /秒");
-            addSectionRow(out, bundle("category.optional", "可选"), "冷却倍率", Strings.autoFixed(turret.coolantMultiplier, 2));
+        OrderedMap<String, Object> flat = PatchViewer2FieldCore.flatFields(block, 2);
+        addMappedField(out, bundle("category.function", "功能"), flat, "range", Stat.range.localized(), true);
+        addMappedField(out, bundle("category.function", "功能"), flat, "reload", Stat.reload.localized(), false);
+        addMappedField(out, bundle("category.function", "功能"), flat, "speed", Stat.speed.localized(), false);
+        addMappedField(out, bundle("category.function", "功能"), flat, "damage", Stat.damage.localized(), false);
+        addMappedField(out, bundle("category.function", "功能"), flat, "bulletDamage", Stat.damage.localized(), false);
+        addMappedField(out, bundle("category.function", "功能"), flat, "repairRadius", Stat.range.localized(), true);
+        addMappedField(out, bundle("category.function", "功能"), flat, "repairSpeed", Stat.repairSpeed.localized(), false);
+        addMappedField(out, bundle("category.power", "电力"), flat, "laserRange", Stat.powerRange.localized(), true);
+        addMappedField(out, bundle("category.power", "电力"), flat, "maxNodes", Stat.powerConnections.localized(), false);
+        addMappedField(out, bundle("category.support", "支持"), flat, "maxPayloadSize", Stat.payloadCapacity.localized(), false);
+        addMappedField(out, bundle("category.optional", "可选"), flat, "coolantMultiplier", "冷却倍率", false);
+        addMappedField(out, bundle("category.optional", "可选"), flat, "coolantUse", "冷却液用量", false);
+    }
+
+
+    private void addMappedField(ContentSnapshot out, String sectionTitle, OrderedMap<String, Object> flat, String fieldName, String label, boolean blocksUnit){
+        if(flat == null) return;
+        Object value = flat.get(fieldName);
+        if(value == null) return;
+        if(value instanceof Number){
+            double number = ((Number)value).doubleValue();
+            if(blocksUnit){
+                addSectionRow(out, sectionTitle, label, Strings.autoFixed((float)(number / Vars.tilesize), 3) + " 格");
+            }else{
+                addSectionRow(out, sectionTitle, label, Strings.autoFixed((float)number, 3));
+            }
+        }else if(value instanceof Boolean){
+            addSectionRow(out, sectionTitle, label, ((Boolean)value) ? "是" : "否");
         }
     }
 
@@ -439,6 +393,7 @@ public class PatchViewer2Mod extends Mod{
         if(unit.armor > 0f) addSectionRow(out, movement, Stat.armor.localized(), Strings.autoFixed(unit.armor, 1));
         if(unit.payloadCapacity > 0f) addSectionRow(out, bundle("category.support", "支持"), Stat.payloadCapacity.localized(), Strings.autoFixed(unit.payloadCapacity, 2));
     }
+
 
     private void snapshotWeapons(ContentSnapshot out, UnitType unit){
         Seq<Weapon> weapons = unit.weapons;
@@ -488,7 +443,6 @@ public class PatchViewer2Mod extends Mod{
         }
         return out.toString();
     }
-
     private String flattenStatValues(Seq<StatValue> values){
         if(values == null || values.isEmpty()) return null;
         Table capture = new Table();
