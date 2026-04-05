@@ -1,5 +1,8 @@
 # PatchViewer / 补丁查看器
 
+<img width="733" height="1465" alt="image" src="https://github.com/user-attachments/assets/d8ee5421-84d8-4cb7-a069-a8fe4303a147" />
+
+
 PatchViewer is a Mindustry Java mod that shows inline before/after stat diffs for datapatch changes inside the in-game database UI.
 
 PatchViewer 是一个 Mindustry Java 模组，用于在游戏内数据库界面直接显示 datapatch 修改前后的属性差异。
