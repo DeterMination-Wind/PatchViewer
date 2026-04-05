@@ -57,6 +57,42 @@ final class PatchViewer2FieldCore{
         return out;
     }
 
+    static Object resolvePath(Object root, String path){
+        if(root == null || path == null || path.isEmpty()) return null;
+        String[] parts = path.split("\\.");
+        Object current = root;
+        for(int i = 0; i < parts.length; i++){
+            if(current == null) return null;
+            Field field = findField(current.getClass(), parts[i]);
+            if(field == null) return null;
+            try{
+                field.setAccessible(true);
+                current = field.get(current);
+            }catch(Throwable ignored){
+                return null;
+            }
+        }
+        return current;
+    }
+
+    static String stringifyValue(Object value){
+        if(value == null) return null;
+        Class<?> type = value.getClass();
+        if(type.isArray()){
+            int len = java.lang.reflect.Array.getLength(value);
+            StringBuilder out = new StringBuilder();
+            for(int i = 0; i < len; i++){
+                Object child = java.lang.reflect.Array.get(value, i);
+                String text = stringifyValue(child);
+                if(text == null || text.isEmpty()) continue;
+                if(out.length() > 0) out.append("  ");
+                out.append(text);
+            }
+            return out.toString();
+        }
+        return String.valueOf(value);
+    }
+
     private static void collect(Object object, String prefix, OrderedMap<String, Object> out, ObjectSet<Object> seen, int depth, int maxDepth){
         if(object == null || depth > maxDepth) return;
         Class<?> type = object.getClass();
@@ -103,6 +139,18 @@ final class PatchViewer2FieldCore{
             current = current.getSuperclass();
         }
         return out;
+    }
+
+    private static Field findField(Class<?> type, String name){
+        Class<?> current = type;
+        while(current != null && current != Object.class){
+            try{
+                return current.getDeclaredField(name);
+            }catch(NoSuchFieldException ignored){
+                current = current.getSuperclass();
+            }
+        }
+        return null;
     }
 
     private static boolean isSimple(Class<?> type){
