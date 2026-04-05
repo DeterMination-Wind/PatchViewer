@@ -55,9 +55,6 @@ public class PatchViewerMod extends Mod{
     private static final float detailsWidth = 400f;
     private static final String buildCostRowKey = "general::buildCost";
     private static final String arrowColor = "[lightgray]";
-    private static final String beforeLabelText = "修改前";
-    private static final String afterLabelText = "修改后";
-    private static final String settingsCategory = "PatchViewer";
     private static final String keyEnabled = "patchviewer-enabled";
     private static final String keyRemovedColor = "patchviewer-color-removed";
     private static final String keyModifiedOldColor = "patchviewer-color-modified-old";
@@ -98,7 +95,7 @@ public class PatchViewerMod extends Mod{
             if(settingsAdded) return;
             settingsAdded = true;
             if(Vars.ui == null || Vars.ui.settings == null) return;
-            Vars.ui.settings.addCategory(settingsCategory, Icon.settingsSmall, this::buildSettings);
+            Vars.ui.settings.addCategory("@settings.patchviewer", Icon.settingsSmall, this::buildSettings);
         });
     }
 
@@ -1111,29 +1108,31 @@ public class PatchViewerMod extends Mod{
     private void renderNativeDiff(Table table, Table before, Seq<LabelState> beforeLabels, Table after, Seq<LabelState> afterLabels, RowKind kind, float contentWidth){
         Table root = new Table();
         root.left().top().defaults().left().top();
+        String beforeLabel = beforeLabelText();
+        String afterLabel = afterLabelText();
         if(before != null && after != null){
             prepareRenderedDiff(beforeLabels, afterLabels);
             if(kind == RowKind.STACK_LIST){
                 highlightChangedGroups(beforeLabels);
                 highlightChangedGroups(afterLabels);
             }
-            renderDiffPanel(root, modifiedOldColorTag() + beforeLabelText + "[]", before, kind, contentWidth, 6f);
+            renderDiffPanel(root, modifiedOldColorTag() + beforeLabel + "[]", before, kind, contentWidth, 6f);
             root.add(arrowColor + "->[]").left().padTop(2f).padBottom(6f).row();
-            renderDiffPanel(root, modifiedNewColorTag() + afterLabelText + "[]", after, kind, contentWidth, 0f);
+            renderDiffPanel(root, modifiedNewColorTag() + afterLabel + "[]", after, kind, contentWidth, 0f);
         }else if(before != null){
             restoreLabelStates(beforeLabels);
             highlightAllLabels(beforeLabels, removedColorTag());
             if(kind == RowKind.STACK_LIST){
                 highlightChangedGroups(beforeLabels);
             }
-            renderDiffPanel(root, removedColorTag() + beforeLabelText + "[]", before, kind, contentWidth, 0f);
+            renderDiffPanel(root, removedColorTag() + beforeLabel + "[]", before, kind, contentWidth, 0f);
         }else if(after != null){
             restoreLabelStates(afterLabels);
             highlightAllLabels(afterLabels, addedColorTag());
             if(kind == RowKind.STACK_LIST){
                 highlightChangedGroups(afterLabels);
             }
-            renderDiffPanel(root, addedColorTag() + afterLabelText + "[]", after, kind, contentWidth, 0f);
+            renderDiffPanel(root, addedColorTag() + afterLabel + "[]", after, kind, contentWidth, 0f);
         }
         table.add(root).left().top().fillX().growX();
     }
@@ -1141,8 +1140,10 @@ public class PatchViewerMod extends Mod{
     private void renderBuildCostDiff(Table table, Seq<ItemStack> before, Seq<ItemStack> after){
         Table line = new Table();
         line.left().top().defaults().left().top();
+        String beforeLabel = beforeLabelText();
+        String afterLabel = afterLabelText();
         if(before != null && after != null){
-            line.add(modifiedOldColorTag() + beforeLabelText + "[]").padRight(6f).top();
+            line.add(modifiedOldColorTag() + beforeLabel + "[]").padRight(6f).top();
             for(ItemStack stack : before){
                 if(stack == null || stack.item == null) continue;
                 Element stackView = StatValues.stack(stack);
@@ -1152,7 +1153,7 @@ public class PatchViewerMod extends Mod{
             line.row();
             line.add(arrowColor + "->[]").padRight(5f).top().left();
             line.row();
-            line.add(modifiedNewColorTag() + afterLabelText + "[]").padRight(6f).top();
+            line.add(modifiedNewColorTag() + afterLabel + "[]").padRight(6f).top();
             for(ItemStack stack : after){
                 if(stack == null || stack.item == null) continue;
                 Element stackView = StatValues.stack(stack);
@@ -1160,7 +1161,7 @@ public class PatchViewerMod extends Mod{
                 line.add(stackView).padRight(5f);
             }
         }else if(before != null){
-            line.add(removedColorTag() + beforeLabelText + "[]").padRight(6f).top();
+            line.add(removedColorTag() + beforeLabel + "[]").padRight(6f).top();
             for(ItemStack stack : before){
                 if(stack == null || stack.item == null) continue;
                 Element stackView = StatValues.stack(stack);
@@ -1168,7 +1169,7 @@ public class PatchViewerMod extends Mod{
                 line.add(stackView).padRight(5f);
             }
         }else if(after != null){
-            line.add(addedColorTag() + afterLabelText + "[]").padRight(6f).top();
+            line.add(addedColorTag() + afterLabel + "[]").padRight(6f).top();
             for(ItemStack stack : after){
                 if(stack == null || stack.item == null) continue;
                 Element stackView = StatValues.stack(stack);
@@ -1192,27 +1193,27 @@ public class PatchViewerMod extends Mod{
 
         table.table(row -> {
             row.left();
-            CheckBox box = new CheckBox("启用 PatchViewer");
+            CheckBox box = new CheckBox(bundle("patchviewer.settings.enabled", "Enable PatchViewer"));
             box.setChecked(isPatchViewerEnabled());
             box.changed(() -> Core.settings.put(keyEnabled, box.isChecked()));
             row.add(box).left();
         }).growX().fillX();
         table.row();
 
-        table.add("[lightgray]颜色支持命名色，如 gold；也支持十六进制，如 #ffd700 或 ffd700。[]").left().wrap().growX();
+        table.add("[lightgray]" + bundle("patchviewer.settings.color-hint", "Colors support named values like gold and hex values like #ffd700 or ffd700.") + "[]").left().wrap().growX();
         table.row();
 
-        addColorSettingRow(table, "删除的条目颜色", keyRemovedColor, defaultRemovedColor);
-        addColorSettingRow(table, "被修改条目的颜色（原条目）", keyModifiedOldColor, defaultModifiedOldColor);
-        addColorSettingRow(table, "被修改条目的颜色（新条目）", keyModifiedNewColor, defaultModifiedNewColor);
-        addColorSettingRow(table, "新增条目颜色", keyAddedColor, defaultAddedColor);
+        addColorSettingRow(table, "patchviewer.settings.removed", "Removed entry color", keyRemovedColor, defaultRemovedColor);
+        addColorSettingRow(table, "patchviewer.settings.modified-old", "Modified entry color (before)", keyModifiedOldColor, defaultModifiedOldColor);
+        addColorSettingRow(table, "patchviewer.settings.modified-new", "Modified entry color (after)", keyModifiedNewColor, defaultModifiedNewColor);
+        addColorSettingRow(table, "patchviewer.settings.added", "Added entry color", keyAddedColor, defaultAddedColor);
     }
 
-    private void addColorSettingRow(SettingsMenuDialog.SettingsTable table, String title, String key, String defaultValue){
+    private void addColorSettingRow(SettingsMenuDialog.SettingsTable table, String titleKey, String titleFallback, String key, String defaultValue){
         table.table(row -> {
             row.left().defaults().left();
 
-            row.add(title).width(210f).wrap().padRight(8f);
+            row.add(bundle(titleKey, titleFallback)).width(210f).wrap().padRight(8f);
 
             TextField field = new TextField(readColorSetting(key, defaultValue));
             field.setMessageText(defaultValue);
@@ -1231,23 +1232,35 @@ public class PatchViewerMod extends Mod{
                 if(normalized != null){
                     Core.settings.put(key, normalized);
                     preview.setColor(parseColorSpec(normalized, readColorValue(key, defaultValue)));
-                    sample.setText(colorTag(normalized) + "预览[]");
+                    sample.setText(colorTag(normalized) + bundle("patchviewer.settings.preview", "Preview") + "[]");
                 }else{
                     preview.setColor(readColorValue(key, defaultValue));
-                    sample.setText("[lightgray]无效[]");
+                    sample.setText("[lightgray]" + bundle("patchviewer.settings.invalid", "Invalid") + "[]");
                 }
             };
 
             field.changed(refresh);
             refresh.run();
 
-            row.button("默认", Styles.flatt, () -> {
+            row.button(bundle("patchviewer.settings.reset", "Reset"), Styles.flatt, () -> {
                 field.setText(defaultValue);
                 Core.settings.put(key, readColorSetting(key, defaultValue));
                 refresh.run();
             }).height(42f).padLeft(8f);
         }).growX().fillX();
         table.row();
+    }
+
+    private String bundle(String key, String fallback){
+        return Core.bundle == null ? fallback : Core.bundle.get(key, fallback);
+    }
+
+    private String beforeLabelText(){
+        return bundle("patchviewer.label.before", "Before");
+    }
+
+    private String afterLabelText(){
+        return bundle("patchviewer.label.after", "After");
     }
 
     private String escape(String text){

@@ -31,8 +31,8 @@ Artifacts will be generated here:
 
 - `dist/PatchViewer.jar`
 - `dist/PatchViewer.zip`
-- `../构建/PatchViewer/PatchViewer-1.0.0.jar`
-- `../构建/PatchViewer/PatchViewer-1.0.0.zip`
+- `../构建/PatchViewer/PatchViewer-1.0.1.jar`
+- `../构建/PatchViewer/PatchViewer-1.0.1.zip`
 
 ## Release / 发布
 
