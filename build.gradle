@@ -1,0 +1,208 @@
+plugins{
+    id "java"
+}
+
+group = "determination"
+version = "1.0.0"
+
+java{
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+sourceSets{
+    main{
+        java.srcDirs = ["src"]
+        resources.srcDirs = ["assets"]
+    }
+}
+
+def mindustryVersion = (findProperty("mindustryVersion") ?: "v154.3").toString()
+
+repositories{
+    mavenCentral()
+    maven{ url "https://jitpack.io" }
+}
+
+dependencies{
+    if(rootProject.findProject(":core") != null){
+        compileOnly project(":core")
+    }else{
+        compileOnly "com.github.Anuken.MindustryJitpack:core:$mindustryVersion"
+    }
+
+    def mindustryXClasses = [
+        new File(rootDir.parentFile, "MindustryX-main/work/core/build/classes/java/main"),
+        new File(rootDir.parentFile, "MindustryX-main/work/core/build/classes/kotlin/main")
+    ].findAll{ it.exists() }
+    if(!mindustryXClasses.isEmpty()){
+        compileOnly files(mindustryXClasses)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach{
+    options.encoding = "UTF-8"
+    if(JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_1_9)){
+        options.release.set(8)
+    }
+}
+
+tasks.withType(Jar).configureEach{
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+jar{
+    archiveFileName = "PatchViewer.zip"
+}
+
+def buildOutDir = new File(rootDir.parentFile, "构建/${project.name}")
+
+def isWindows = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows")
+
+def findD8 = {
+    def explicit = System.getenv("D8_PATH")
+    if(explicit){
+        def f = new File(explicit)
+        if(f.exists()) return f
+    }
+
+    def sdkRoot = System.getenv("ANDROID_SDK_ROOT") ?: System.getenv("ANDROID_HOME")
+    if(sdkRoot){
+        def buildToolsDir = new File(sdkRoot, "build-tools")
+        if(buildToolsDir.isDirectory()){
+            def toolName = isWindows ? "d8.bat" : "d8"
+            def candidates = (buildToolsDir.listFiles() ?: [])
+                .findAll{ it.isDirectory() }
+                .sort{ a, b -> b.name <=> a.name }
+
+            for(def dir : candidates){
+                def exe = new File(dir, toolName)
+                if(exe.exists()) return exe
+            }
+        }
+    }
+
+    if(isWindows){
+        def workspaceRoot = rootDir.parentFile
+        def matches = (workspaceRoot.listFiles() ?: [])
+            .findAll{ it.isDirectory() && it.name.startsWith("commandlinetools-win-") }
+            .sort{ a, b -> b.name <=> a.name }
+
+        for(def dir : matches){
+            def exe = new File(dir, "cmdline-tools/bin/d8.bat")
+            if(exe.exists()) return exe
+        }
+    }
+
+    return null
+}
+
+def androidDexOutDir = layout.buildDirectory.dir("d8").get().asFile
+
+tasks.register("d8InputJar", Jar){
+    group = "build"
+    description = "Builds a jar used only as input for D8."
+    dependsOn tasks.named("classes")
+    archiveFileName = "${project.name}-d8-input.jar"
+    destinationDirectory = layout.buildDirectory.dir("d8-input")
+    from(sourceSets.main.output)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register("dexAndroid", Exec){
+    group = "build"
+    description = "Compiles Java bytecode into classes.dex for Mindustry Android mod loading."
+    dependsOn tasks.named("d8InputJar")
+
+    doFirst{
+        def d8 = findD8()
+        if(d8 == null){
+            throw new GradleException("D8 not found. Set ANDROID_SDK_ROOT/ANDROID_HOME or D8_PATH.")
+        }
+        delete(androidDexOutDir)
+        androidDexOutDir.mkdirs()
+
+        def programZip = tasks.named("d8InputJar").get().archiveFile.get().asFile
+
+        commandLine d8.absolutePath
+        args "--min-api", "14", "--release", "--output", androidDexOutDir.absolutePath
+        args programZip.absolutePath
+    }
+}
+
+tasks.register("jarMerged", Jar){
+    group = "build"
+    description = "Packages a single jar for both desktop and Android."
+    dependsOn tasks.named("classes")
+    dependsOn tasks.named("dexAndroid")
+    archiveFileName = "${project.name}.jar"
+    destinationDirectory = layout.buildDirectory.dir("libs")
+    from(sourceSets.main.output)
+    from(androidDexOutDir){
+        include "classes.dex"
+    }
+    from(projectDir){
+        include "mod.json"
+        include "mod.hjson"
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register("zipMerged", Zip){
+    group = "build"
+    description = "Packages a single zip for both desktop and Android."
+    dependsOn tasks.named("jarMerged")
+    archiveFileName = "${project.name}.zip"
+    destinationDirectory = layout.buildDirectory.dir("libs")
+    from({ zipTree(tasks.named("jarMerged").get().archiveFile.get().asFile) })
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register("copyMergedJarToDist", Copy){
+    dependsOn tasks.named("jarMerged")
+    from(tasks.named("jarMerged").flatMap{ it.archiveFile })
+    into(new File(project.projectDir, "dist"))
+    rename{ _ -> "${project.name}.jar" }
+    doNotTrackState("Copying into dist is a convenience step.")
+}
+
+tasks.register("copyMergedZipToDist", Copy){
+    dependsOn tasks.named("zipMerged")
+    from(tasks.named("zipMerged").flatMap{ it.archiveFile })
+    into(new File(project.projectDir, "dist"))
+    rename{ _ -> "${project.name}.zip" }
+    doNotTrackState("Copying into dist is a convenience step.")
+}
+
+tasks.register("copyMergedJarToBuildDir", Copy){
+    doNotTrackState("Copies into build output folder for convenience.")
+    dependsOn tasks.named("jarMerged")
+    from(tasks.named("jarMerged").flatMap{ it.archiveFile })
+    into(buildOutDir)
+    rename{ _ -> "${project.name}-${project.version}.jar" }
+}
+
+tasks.register("copyMergedZipToBuildDir", Copy){
+    doNotTrackState("Copies into build output folder for convenience.")
+    dependsOn tasks.named("zipMerged")
+    from(tasks.named("zipMerged").flatMap{ it.archiveFile })
+    into(buildOutDir)
+    rename{ _ -> "${project.name}-${project.version}.zip" }
+}
+
+tasks.named("jarMerged").configure{
+    finalizedBy tasks.named("copyMergedJarToDist")
+    finalizedBy tasks.named("copyMergedJarToBuildDir")
+}
+
+tasks.named("zipMerged").configure{
+    finalizedBy tasks.named("copyMergedZipToDist")
+    finalizedBy tasks.named("copyMergedZipToBuildDir")
+}
+
+tasks.register("deploy"){
+    group = "build"
+    description = "Builds merged desktop+android jar and zip artifacts."
+    dependsOn tasks.named("jarMerged")
+    dependsOn tasks.named("zipMerged")
+}

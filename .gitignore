@@ -1,0 +1,10 @@
+.gradle/
+build/
+dist/
+
+/构建/
+gradle/Detail.md
+gradle/wrapper/Detail.md
+*.log
+hs_err_pid*
+replay_pid*
