@@ -527,20 +527,6 @@ public class PatchViewerMod extends Mod{
         return null;
     }
 
-    private void tintElementTree(Element element, Color tint){
-        if(element == null || tint == null) return;
-        element.setColor(tint);
-        if(element instanceof ScrollPane){
-            tintElementTree(((ScrollPane)element).getWidget(), tint);
-        }
-        if(element instanceof Group){
-            Seq<Element> children = ((Group)element).getChildren();
-            for(int i = 0; i < children.size; i++){
-                tintElementTree(children.get(i), tint);
-            }
-        }
-    }
-
     private RowKind classifyRow(Stat stat, Element rendered){
         if(stat == Stat.buildCost) return RowKind.BUILD_COST;
         if(stat == Stat.weapons) return RowKind.WEAPON_PANEL;
@@ -795,12 +781,16 @@ public class PatchViewerMod extends Mod{
         if(diff != null) displayKeys.addAll(diff.rows.keys().toSeq());
 
         for(String key : displayKeys){
-            if(buildCostRowKey.equals(key)) continue;
             SnapshotRow currentRow = after == null ? null : after.rows.get(key);
             SnapshotRow beforeRow = before == null ? null : before.rows.get(key);
             InlineRow row = diff == null ? null : diff.rows.get(key);
             SnapshotRow source = currentRow != null ? currentRow : beforeRow;
-            if(source == null) continue;
+            if(source == null){
+                if(isBuildCostDiffRow(row)){
+                    width = Math.max(width, estimateBuildCostDiffWidth(row));
+                }
+                continue;
+            }
             width = Math.max(width, estimateRowWidth(source, currentRow, row));
         }
 
@@ -832,6 +822,13 @@ public class PatchViewerMod extends Mod{
             return combineRowWidth(source.kind, labelWidth, width, valueWidth);
         }
         return Math.max(width + Math.min(maxTextDiffMeasureWidth, measureMarkupWidth(Strings.stripColors(row.markup))) + 12f, width + minValueWidth);
+    }
+
+    private float estimateBuildCostDiffWidth(InlineRow row){
+        if(row == null) return 0f;
+        float labelWidth = measureMarkupWidth(row.label);
+        float width = labelWidth + 48f;
+        return width + Math.max(measureStacksWidth(row.buildCostBefore), measureStacksWidth(row.buildCostAfter)) + 56f;
     }
 
     private float combineRowWidth(RowKind kind, float labelWidth, float inlineWidth, float valueWidth){
@@ -894,6 +891,10 @@ public class PatchViewerMod extends Mod{
         return kind == RowKind.STACK_LIST;
     }
 
+    private boolean isBuildCostDiffRow(InlineRow row){
+        return row != null && (row.buildCostBefore != null || row.buildCostAfter != null);
+    }
+
     private void showPatched(UnlockableContent content){
         Vars.ui.content.cont.clear();
 
@@ -950,30 +951,33 @@ public class PatchViewerMod extends Mod{
         OrderedSet<String> displayedCategories = new OrderedSet<>();
 
         for(String key : displayKeys){
-            if(buildCostRowKey.equals(key)) continue;
             SnapshotRow currentRow = after == null ? null : after.rows.get(key);
             SnapshotRow beforeRow = before == null ? null : before.rows.get(key);
             InlineRow row = diff == null ? null : diff.rows.get(key);
             SnapshotRow source = currentRow != null ? currentRow : beforeRow;
-            if(source == null) continue;
+            if(source == null && !isBuildCostDiffRow(row)) continue;
 
-            boolean showCategory = false;
-            if(displayedCategories.add(source.cat.name)) showCategory = content.stats.useCategories;
-            if(showCategory){
-                table.add("@category." + source.cat.name).color(Pal.accent).fillX();
-                table.row();
+            if(source != null){
+                boolean showCategory = false;
+                if(displayedCategories.add(source.cat.name)) showCategory = content.stats.useCategories;
+                if(showCategory){
+                    table.add("@category." + source.cat.name).color(Pal.accent).fillX();
+                    table.row();
+                }
             }
 
             table.table(inset -> {
                 inset.left().top().defaults().left().top();
-                boolean blockRow = isBlockPanelKind(source.kind);
-                inset.add("[lightgray]" + source.label + ":[] ").top().left();
+                String label = source != null ? source.label : row.label;
+                RowKind kind = source != null ? source.kind : row.kind;
+                boolean blockRow = isBlockPanelKind(kind);
+                inset.add("[lightgray]" + label + ":[] ").top().left();
                 if(blockRow) inset.row();
-                float valueWidth = rowValueWidth(source.label, contentWidth, source.kind);
+                float valueWidth = rowValueWidth(label, contentWidth, kind);
                 if(row == null && currentRow != null){
                     renderSnapshotRow(inset, currentRow, valueWidth);
-                }else if(row != null && (row.buildCostBefore != null || row.buildCostAfter != null)){
-                    renderBuildCostDiff(inset, row.buildCostBefore, row.buildCostAfter);
+                }else if(isBuildCostDiffRow(row)){
+                    renderBuildCostDiff(inset, row.buildCostBefore, row.buildCostAfter, valueWidth);
                 }else if(row != null && row.nativeWidgetDiff){
                     renderNativeDiff(inset, row.beforeRendered, row.beforeLabels, row.afterRendered, row.afterLabels, row.kind, valueWidth);
                 }else if(row != null){
@@ -1100,7 +1104,9 @@ public class PatchViewerMod extends Mod{
 
     private void renderDiffPanel(Table table, String labelMarkup, Table rendered, RowKind kind, float contentWidth, float bottomPad){
         if(rendered == null) return;
-        table.add(labelMarkup).left().padBottom(2f).row();
+        if(labelMarkup != null && !labelMarkup.isEmpty()){
+            table.add(labelMarkup).left().padBottom(2f).row();
+        }
         table.table(Styles.grayPanel, panel -> renderRenderedValue(panel, rendered, kind)).left().top().fillX().width(contentWidth).growX().padBottom(bottomPad);
         table.row();
     }
@@ -1108,76 +1114,97 @@ public class PatchViewerMod extends Mod{
     private void renderNativeDiff(Table table, Table before, Seq<LabelState> beforeLabels, Table after, Seq<LabelState> afterLabels, RowKind kind, float contentWidth){
         Table root = new Table();
         root.left().top().defaults().left().top();
-        String beforeLabel = beforeLabelText();
-        String afterLabel = afterLabelText();
         if(before != null && after != null){
             prepareRenderedDiff(beforeLabels, afterLabels);
             if(kind == RowKind.STACK_LIST){
                 highlightChangedGroups(beforeLabels);
                 highlightChangedGroups(afterLabels);
             }
-            renderDiffPanel(root, modifiedOldColorTag() + beforeLabel + "[]", before, kind, contentWidth, 6f);
+            renderDiffPanel(root, null, before, kind, contentWidth, 6f);
             root.add(arrowColor + "->[]").left().padTop(2f).padBottom(6f).row();
-            renderDiffPanel(root, modifiedNewColorTag() + afterLabel + "[]", after, kind, contentWidth, 0f);
+            renderDiffPanel(root, null, after, kind, contentWidth, 0f);
         }else if(before != null){
             restoreLabelStates(beforeLabels);
             highlightAllLabels(beforeLabels, removedColorTag());
             if(kind == RowKind.STACK_LIST){
                 highlightChangedGroups(beforeLabels);
             }
-            renderDiffPanel(root, removedColorTag() + beforeLabel + "[]", before, kind, contentWidth, 0f);
+            renderDiffPanel(root, null, before, kind, contentWidth, 0f);
         }else if(after != null){
             restoreLabelStates(afterLabels);
             highlightAllLabels(afterLabels, addedColorTag());
             if(kind == RowKind.STACK_LIST){
                 highlightChangedGroups(afterLabels);
             }
-            renderDiffPanel(root, addedColorTag() + afterLabel + "[]", after, kind, contentWidth, 0f);
+            renderDiffPanel(root, null, after, kind, contentWidth, 0f);
         }
         table.add(root).left().top().fillX().growX();
     }
 
-    private void renderBuildCostDiff(Table table, Seq<ItemStack> before, Seq<ItemStack> after){
+    private void renderBuildCostDiff(Table table, Seq<ItemStack> before, Seq<ItemStack> after, float availableWidth){
         Table line = new Table();
         line.left().top().defaults().left().top();
-        String beforeLabel = beforeLabelText();
-        String afterLabel = afterLabelText();
         if(before != null && after != null){
-            line.add(modifiedOldColorTag() + beforeLabel + "[]").padRight(6f).top();
-            for(ItemStack stack : before){
-                if(stack == null || stack.item == null) continue;
-                Element stackView = StatValues.stack(stack);
-                tintElementTree(stackView, modifiedOldColorValue());
-                line.add(stackView).padRight(5f);
-            }
-            line.row();
-            line.add(arrowColor + "->[]").padRight(5f).top().left();
-            line.row();
-            line.add(modifiedNewColorTag() + afterLabel + "[]").padRight(6f).top();
-            for(ItemStack stack : after){
-                if(stack == null || stack.item == null) continue;
-                Element stackView = StatValues.stack(stack);
-                tintElementTree(stackView, modifiedNewColorValue());
-                line.add(stackView).padRight(5f);
+            boolean inline = shouldInlineBuildCost(before, after, availableWidth);
+            if(inline){
+                addBuildCostStacks(line, before, modifiedOldColorTag());
+                line.add(arrowColor + "->[]").padLeft(6f).padRight(6f).top();
+                addBuildCostStacks(line, after, modifiedNewColorTag());
+            }else{
+                addBuildCostStacks(line, before, modifiedOldColorTag());
+                line.row();
+                line.add(arrowColor + "->[]").padRight(5f).top().left();
+                line.row();
+                addBuildCostStacks(line, after, modifiedNewColorTag());
             }
         }else if(before != null){
-            line.add(removedColorTag() + beforeLabel + "[]").padRight(6f).top();
-            for(ItemStack stack : before){
-                if(stack == null || stack.item == null) continue;
-                Element stackView = StatValues.stack(stack);
-                tintElementTree(stackView, removedColorValue());
-                line.add(stackView).padRight(5f);
-            }
+            addBuildCostStacks(line, before, removedColorTag());
         }else if(after != null){
-            line.add(addedColorTag() + afterLabel + "[]").padRight(6f).top();
-            for(ItemStack stack : after){
-                if(stack == null || stack.item == null) continue;
-                Element stackView = StatValues.stack(stack);
-                tintElementTree(stackView, addedColorValue());
-                line.add(stackView).padRight(5f);
-            }
+            addBuildCostStacks(line, after, addedColorTag());
         }
         table.add(line).growX().top().left();
+    }
+
+    private void addBuildCostStacks(Table table, Seq<ItemStack> stacks, String amountColorTag){
+        if(table == null || stacks == null) return;
+        for(ItemStack stack : stacks){
+            if(stack == null || stack.item == null) continue;
+            Element stackView = StatValues.stack(stack);
+            colorStackAmountLabels(stackView, amountColorTag);
+            table.add(stackView).padRight(5f).top();
+        }
+    }
+
+    private boolean shouldInlineBuildCost(Seq<ItemStack> before, Seq<ItemStack> after, float availableWidth){
+        if(before == null || after == null) return false;
+        float leftWidth = measureStacksWidth(before);
+        float rightWidth = measureStacksWidth(after);
+        float arrowWidth = measureMarkupWidth("->") + 20f;
+        return leftWidth + arrowWidth + rightWidth <= Math.max(availableWidth, 0f);
+    }
+
+    private void colorStackAmountLabels(Element element, String amountColorTag){
+        if(element == null || amountColorTag == null) return;
+        if(element instanceof Label){
+            Label label = (Label)element;
+            String raw = label.getText() == null ? "" : label.getText().toString();
+            String visible = Strings.stripColors(raw);
+            if(visible != null && numberPattern.matcher(visible).find()){
+                label.setColor(1f, 1f, 1f, label.color.a);
+                label.setText(amountColorTag + escape(visible) + "[]");
+            }
+            return;
+        }
+        if(element instanceof ScrollPane){
+            colorStackAmountLabels(((ScrollPane)element).getWidget(), amountColorTag);
+            return;
+        }
+        if(element instanceof Group){
+            Seq<Element> children = ((Group)element).getChildren();
+            for(int i = 0; i < children.size; i++){
+                colorStackAmountLabels(children.get(i), amountColorTag);
+            }
+        }
     }
 
     private void shareContent(UnlockableContent content, boolean detailed){
@@ -1255,14 +1282,6 @@ public class PatchViewerMod extends Mod{
         return Core.bundle == null ? fallback : Core.bundle.get(key, fallback);
     }
 
-    private String beforeLabelText(){
-        return bundle("patchviewer.label.before", "Before");
-    }
-
-    private String afterLabelText(){
-        return bundle("patchviewer.label.after", "After");
-    }
-
     private String escape(String text){
         return text == null ? "null" : text.replace("[", "[[");
     }
@@ -1285,22 +1304,6 @@ public class PatchViewerMod extends Mod{
 
     private String addedColorTag(){
         return colorTag(readColorSetting(keyAddedColor, defaultAddedColor));
-    }
-
-    private Color removedColorValue(){
-        return readColorValue(keyRemovedColor, defaultRemovedColor);
-    }
-
-    private Color modifiedOldColorValue(){
-        return readColorValue(keyModifiedOldColor, defaultModifiedOldColor);
-    }
-
-    private Color modifiedNewColorValue(){
-        return readColorValue(keyModifiedNewColor, defaultModifiedNewColor);
-    }
-
-    private Color addedColorValue(){
-        return readColorValue(keyAddedColor, defaultAddedColor);
     }
 
     private String readColorSetting(String key, String fallback){
