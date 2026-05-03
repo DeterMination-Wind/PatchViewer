@@ -77,7 +77,10 @@ public class PatchViewer2Mod extends Mod{
                     Content raw = seq.get(j);
                     if(raw instanceof UnlockableContent){
                         UnlockableContent content = (UnlockableContent)raw;
-                        baselineSnapshots.put(contentKey(content), snapshot(content));
+                        ContentSnapshot snap = snapshot(content);
+                        if(snap != null){
+                            baselineSnapshots.put(contentKey(content), snap);
+                        }
                     }
                 }
             }
@@ -93,6 +96,10 @@ public class PatchViewer2Mod extends Mod{
 
         ContentSnapshot left = baselineSnapshots.get(contentKey(content));
         ContentSnapshot right = snapshot(content);
+        if(right == null){
+            Log.warn("[PatchViewer2] Skip showing content due to invalid stats snapshot: @", content.name);
+            return;
+        }
         if(left == null) left = right;
 
         final ContentSnapshot leftSnapshot = left;
@@ -294,6 +301,15 @@ public class PatchViewer2Mod extends Mod{
     }
 
     private ContentSnapshot snapshot(UnlockableContent content){
+        if(content == null) return null;
+        try{
+            content.checkStats();
+        }catch(Throwable error){
+            Log.warn("[PatchViewer2] Failed to build stats for content '@' (@). Skipped to prevent crash.", content.name, content.getContentType().name());
+            Log.err(error);
+            return null;
+        }
+
         ContentSnapshot out = new ContentSnapshot();
         out.description = content.displayDescription();
         out.details = content.details;
@@ -306,7 +322,6 @@ public class PatchViewer2Mod extends Mod{
             snapshotUnit(out, (UnitType)content);
         }
 
-        content.checkStats();
         Stats stats = content.stats;
         for(StatCat cat : stats.toMap().keys()){
             OrderedMap<Stat, Seq<StatValue>> map = stats.toMap().get(cat);
