@@ -156,7 +156,11 @@ public class PatchViewerMod extends Mod{
         afterSnapshots.clear();
         diffsByContent.clear();
         if(!baselineCaptured) captureBaselineAtStartup();
-        if(Vars.state == null || Vars.state.patcher == null) return;
+        if(Vars.state == null) return;
+        try{
+            java.lang.reflect.Field patcherField = Vars.state.getClass().getField("patcher");
+            if(patcherField.get(Vars.state) == null) return;
+        }catch(Throwable ignored){}
 
         Seq<UnlockableContent> all = collectAllContents();
         for(UnlockableContent content : all){
