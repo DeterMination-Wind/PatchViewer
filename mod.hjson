@@ -3,7 +3,7 @@ name: patchviewer
 displayName: "PatchViewer / 补丁查看器"
 author: DeterMination
 main: patchviewer.PatchViewerMod
-version: 2.1.0
+version: 2.2.0
 description: "Inline and quick before/after diff viewer for Mindustry datapatches. / Mindustry 数据补丁的数据库与快捷差异查看器。"
 minGameVersion: 154
 java: true
