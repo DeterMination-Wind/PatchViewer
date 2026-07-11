@@ -1,4 +1,10 @@
 # PatchViewer / 补丁查看器
+<h1 align="center">
+  <a href="https://github.com/DeterMination-Wind/PatchViewer/releases/latest"><img src="https://img.shields.io/github/v/release/DeterMination-Wind/PatchViewer?display_name=release&label=Latest%20Release&color=green"></a>
+  <a href="https://github.com/DeterMination-Wind/PatchViewer/releases"><img src="https://img.shields.io/github/downloads/DeterMination-Wind/PatchViewer/total?label=Downloads&color=blue"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/DeterMination-Wind/PatchViewer?label=License"></a>
+  <a href="https://github.com/DeterMination-Wind/PatchViewer"><img src="https://img.shields.io/github/stars/DeterMination-Wind/PatchViewer?style=flat&label=Star%20this%20mod!&color=yellow"></a>
+</h1>
 
 PatchViewer is a Mindustry Java mod for viewing before/after diffs introduced by datapatches. It highlights patched content in the core database and can show a compact diff while hovering blocks or units in-game.
 
