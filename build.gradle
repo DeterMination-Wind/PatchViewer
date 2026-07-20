@@ -3,7 +3,7 @@ plugins{
 }
 
 group = "determination"
-version = "0.0.0"
+version = "2.2.2"
 
 java{
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -56,7 +56,7 @@ jar{
 }
 
 def buildOutDir = new File(rootDir.parentFile, "构建/${project.name}")
-def releaseArtifactBase = "${project.name}-dev"
+def releaseArtifactBase = "${project.name}-v${project.version}"
 
 def isWindows = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows")
 
