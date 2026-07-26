@@ -3,7 +3,7 @@ plugins{
 }
 
 group = "determination"
-version = "2.2.2"
+version = "0.0.0"
 
 java{
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -56,7 +56,8 @@ jar{
 }
 
 def buildOutDir = new File(rootDir.parentFile, "构建/${project.name}")
-def releaseArtifactBase = "${project.name}-v${project.version}"
+def isDevBuild = project.version.toString() == "0.0.0"
+def releaseArtifactBase = isDevBuild ? "${project.name}-dev" : "${project.name}-v${project.version}"
 
 def isWindows = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows")
 
@@ -192,12 +193,16 @@ tasks.register("copyMergedZipToBuildDir", Copy){
 }
 
 tasks.named("jarMerged").configure{
-    finalizedBy tasks.named("copyMergedJarToDist")
+    if(!isDevBuild){
+        finalizedBy tasks.named("copyMergedJarToDist")
+    }
     finalizedBy tasks.named("copyMergedJarToBuildDir")
 }
 
 tasks.named("zipMerged").configure{
-    finalizedBy tasks.named("copyMergedZipToDist")
+    if(!isDevBuild){
+        finalizedBy tasks.named("copyMergedZipToDist")
+    }
     finalizedBy tasks.named("copyMergedZipToBuildDir")
 }
 

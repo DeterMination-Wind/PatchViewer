@@ -12,22 +12,22 @@ PatchViewer 是一个 Mindustry Java 模组，用于查看 datapatch 对内容�
 
 ## Features / 功能
 
-- Inline before/after diff panels in the core database
-- Native stat panel highlighting for modified, removed, and added values
+- Native core-database stats with in-place before/after diff panels
+- Native stat snapshots for modified, removed, and added values
 - Hold the PatchViewer quick-view key, default `Alt`, to inspect patched blocks or units under the cursor
 - Quick diff display modes: near-cursor HUD or inserted build-info panel
 - Configurable diff colors, HUD opacity, HUD width, and HUD background color
 - Compact icon/stack rendering for costs, inputs, outputs, mineable ores, weapons, and other icon-heavy stats
-- Unit icons in patched database stats use a consistent size and can be clicked to open the unit database page
+- Patched database stats preserve the game's native icon sizes, wrapping, layout, and icon interactions
 - Merged desktop + Android release artifacts
 
-- 在核心数据库属性行内显示修改前/修改后的 diff 面板
-- 对原生属性面板中的修改、删除、新增值进行高亮
+- 保持核心数据库原版属性显示，并在变化属性位置插入修改前/修改后的差异面板
+- 对修改、删除、新增的原生属性快照显示前后对照
 - 长按 PatchViewer 快捷查看键，默认 `Alt`，可查看鼠标下建筑或单位的补丁差异
 - 快捷差异支持鼠标旁 HUD 与建造栏插入两种显示模式
 - 可配置 diff 颜色、HUD 透明度、HUD 宽度和 HUD 背景色
 - 对造价、输入、输出、可采集矿物、武器等图标密集属性使用紧凑 icon/stack 显示
-- 被补丁影响的数据库属性中，单位图标会统一尺寸，并可点击跳转到对应单位详情页
+- 被补丁影响的数据库属性保留游戏原有的图标尺寸、换行、排版和图标交互
 - 同时输出桌面版和安卓版可用的合并产物
 
 ## Build / 构建
