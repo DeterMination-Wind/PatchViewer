@@ -44,6 +44,17 @@ jobs:
           fi
           "$gradle_cmd" --no-daemon clean deploy
 
+      - name: Verify mod descriptor in jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          jar_file=$(ls dist/*.jar | head -1)
+          if ! unzip -l "$jar_file" | grep -qE 'mod\.(json|hjson)'; then
+            echo "ERROR: $jar_file is missing mod.json/mod.hjson" >&2
+            exit 1
+          fi
+          echo "OK: $jar_file contains a mod descriptor"
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
