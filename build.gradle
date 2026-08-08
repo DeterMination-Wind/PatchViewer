@@ -19,6 +19,20 @@ sourceSets{
 
 def mindustryVersion = (findProperty("mindustryVersion") ?: "v154.3").toString()
 
+def arcRedirectVersion = (findProperty("arcVersion") ?: "v155.4").toString()
+
+configurations.configureEach {
+    resolutionStrategy.eachDependency { details ->
+        // MindustryJitpack POMs reference Arc by raw commit hash (e.g. ec5df18e54).
+        // JitPack does not reliably publish Arc artifacts at those commit coordinates,
+        // so redirect any non-tag Arc coordinate to a published Arc tag.
+        if (details.requested.group == "com.github.Anuken.Arc" && !details.requested.version.startsWith("v")) {
+            details.useVersion(arcRedirectVersion)
+            details.because("Use published Arc tag artifacts for stable CI dependency resolution")
+        }
+    }
+}
+
 repositories{
     mavenCentral()
     maven{ url "https://jitpack.io" }
