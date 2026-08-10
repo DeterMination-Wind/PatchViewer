@@ -42,8 +42,8 @@ Artifacts will be generated here:
 
 - `dist/PatchViewer.jar`
 - `dist/PatchViewer.zip`
-- `../构建/PatchViewer/PatchViewer-v2.3.0.jar`
-- `../构建/PatchViewer/PatchViewer-v2.3.0.zip`
+- `../构建/PatchViewer/PatchViewer-v2.3.2.jar`
+- `../构建/PatchViewer/PatchViewer-v2.3.2.zip`
 
 ## Release / 发布
 
@@ -52,3 +52,16 @@ GitHub Actions workflow: `.github/workflows/release.yml`
 - Trigger: push tag `v*` or manual dispatch
 - Build: `clean deploy`
 - Release assets: `dist/*.jar` and `dist/*.zip`
+- CI verifies the merged jar contains a mod descriptor (`mod.json`/`mod.hjson`) and fails the build otherwise
+
+## Changelog / 更新日志
+
+### v2.3.2
+
+- 补充 `mod.json` 描述文件，与 `mod.hjson` 保持一致，合并 jar 同时携带两种描述；发布流程校验产物 jar 内含 `mod.json`/`mod.hjson`，缺失即构建失败。
+- Added a `mod.json` descriptor mirroring `mod.hjson`; merged jars now carry both descriptors, and the release workflow fails the build if the jar lacks `mod.json`/`mod.hjson`.
+
+### v2.3.1
+
+- 性能优化：关闭时跳过基准捕获，并缓存构建信息差异。
+- Performance: skip baseline capture when disabled and cache build-info diffs.
