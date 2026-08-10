@@ -149,13 +149,22 @@ public class PatchViewer2Mod extends Mod{
             title.add("[accent]" + content.localizedName + "\n[gray]" + content.name + (logicId != -1 ? " <#" + logicId + ">" : "")).padLeft(5f).left();
         }).left();
 
-        if(Vars.state.isGame() && Vars.state.patcher != null && Vars.state.patcher.isPatched(content)){
-            table.row();
-            table.table(t -> {
-                t.image(Icon.info).color(Pal.lightishGray);
-                t.add("@database.patched").color(Pal.lightishGray).padLeft(4f);
-            }).pad(4f).left();
-        }
+        try{
+            if(Vars.state.isGame()){
+                java.lang.reflect.Field patcherField = Vars.state.getClass().getField("patcher");
+                Object patcher = patcherField.get(Vars.state);
+                if(patcher != null){
+                    java.lang.reflect.Method isPatched = patcher.getClass().getMethod("isPatched", UnlockableContent.class);
+                    if((Boolean)isPatched.invoke(patcher, content)){
+                        table.row();
+                        table.table(t -> {
+                            t.image(Icon.info).color(Pal.lightishGray);
+                            t.add("@database.patched").color(Pal.lightishGray).padLeft(4f);
+                        }).pad(4f).left();
+                    }
+                }
+            }
+        }catch(Throwable ignored){}
     }
 
     private void buildSnapshotPane(Table pane, String title, ContentSnapshot primary, ContentSnapshot secondary, boolean highlightChanges){
@@ -302,13 +311,6 @@ public class PatchViewer2Mod extends Mod{
 
     private ContentSnapshot snapshot(UnlockableContent content){
         if(content == null) return null;
-        try{
-            content.checkStats();
-        }catch(Throwable error){
-            Log.warn("[PatchViewer2] Failed to build stats for content '@' (@). Skipped to prevent crash.", content.name, content.getContentType().name());
-            Log.err(error);
-            return null;
-        }
 
         ContentSnapshot out = new ContentSnapshot();
         out.description = content.displayDescription();
@@ -318,11 +320,19 @@ public class PatchViewer2Mod extends Mod{
             snapshotBlock(out, (Block)content);
         }
 
+        try{
+            content.checkStats();
+        }catch(Throwable error){
+            Log.warn("[PatchViewer2] Failed to build stats for content '@' (@). Partial snapshot used.", content.name, content.getContentType().name());
+            Log.err(error);
+        }
+
         if(content instanceof UnitType){
             snapshotUnit(out, (UnitType)content);
         }
 
         Stats stats = content.stats;
+        if(stats == null) return out;
         for(StatCat cat : stats.toMap().keys()){
             OrderedMap<Stat, Seq<StatValue>> map = stats.toMap().get(cat);
             if(map == null || map.size == 0) continue;
@@ -351,21 +361,21 @@ public class PatchViewer2Mod extends Mod{
         addSectionRow(out, general, Stat.size.localized(), block.size + "x" + block.size);
         addSectionRow(out, general, Stat.buildTime.localized(), Strings.autoFixed(block.buildTime / 60f, 3) + " 秒");
         addSectionRow(out, general, "能否超速", block.canOverdrive ? "是" : "否");
-        if(block.armor > 0f) addSectionRow(out, general, Stat.armor.localized(), Strings.autoFixed(block.armor, 1));
+        if(block.armor > 0f) addSectionRow(out, general, Stat.armor.localized(), formatStatValue(block.armor));
         if(block.itemCapacity > 0) addSectionRow(out, bundle("category.items", "物品"), Stat.itemCapacity.localized(), String.valueOf(block.itemCapacity));
         if(block.requirements != null && block.requirements.length > 0){
             addSectionRow(out, general, Stat.buildCost.localized(), formatItemStacks(block.requirements));
         }
         if(block.hasPower && block.consPower != null){
             if(block.consPower.usage > 0f){
-                addSectionRow(out, bundle("category.power", "电力"), "消耗电力", "⚡ " + Strings.autoFixed(block.consPower.usage * 60f, 0) + " 电力/秒");
+                addSectionRow(out, bundle("category.power", "电力"), "消耗电力", "⚡ " + formatStatValue(block.consPower.usage * 60f) + " 电力/秒");
             }
             if(block.consPower.capacity > 0f){
-                addSectionRow(out, bundle("category.power", "电力"), Stat.powerCapacity.localized(), Strings.autoFixed(block.consPower.capacity, 0));
+                addSectionRow(out, bundle("category.power", "电力"), Stat.powerCapacity.localized(), formatStatValue(block.consPower.capacity));
             }
         }
         if(block.hasLiquids){
-            addSectionRow(out, bundle("category.liquids", "液体"), "液体容量", Strings.autoFixed(block.liquidCapacity, 0) + " 液体");
+            addSectionRow(out, bundle("category.liquids", "液体"), "液体容量", formatStatValue(block.liquidCapacity) + " 液体");
         }
         OrderedMap<String, Object> flat = PatchViewer2FieldCore.flatFields(block, 2);
         addMappedField(out, bundle("category.function", "功能"), flat, "range", Stat.range.localized(), true);
@@ -401,11 +411,11 @@ public class PatchViewer2Mod extends Mod{
 
     private void snapshotUnit(ContentSnapshot out, UnitType unit){
         String movement = bundle("category.movement", "移动");
-        addSectionRow(out, movement, Stat.health.localized(), Strings.autoFixed(unit.health, 0));
+        addSectionRow(out, movement, Stat.health.localized(), formatStatValue(unit.health));
         addSectionRow(out, movement, Stat.speed.localized(), Strings.autoFixed(unit.speed * 60f / Vars.tilesize, 2));
         addSectionRow(out, movement, Stat.itemCapacity.localized(), String.valueOf(unit.itemCapacity));
-        addSectionRow(out, movement, Stat.range.localized(), Strings.autoFixed(unit.maxRange / Vars.tilesize, 1) + " 格");
-        if(unit.armor > 0f) addSectionRow(out, movement, Stat.armor.localized(), Strings.autoFixed(unit.armor, 1));
+        addSectionRow(out, movement, Stat.range.localized(), formatStatValue(unit.maxRange / Vars.tilesize) + " 格");
+        if(unit.armor > 0f) addSectionRow(out, movement, Stat.armor.localized(), formatStatValue(unit.armor));
         if(unit.payloadCapacity > 0f) addSectionRow(out, bundle("category.support", "支持"), Stat.payloadCapacity.localized(), Strings.autoFixed(unit.payloadCapacity, 2));
     }
 
@@ -418,13 +428,13 @@ public class PatchViewer2Mod extends Mod{
             WeaponSnapshot snapshot = new WeaponSnapshot();
             snapshot.key = i;
             snapshot.name = weapon.name == null || weapon.name.isEmpty() ? "weapon-" + i : weapon.name;
-            snapshot.rows.add(new RowSnapshot("武器范围", Strings.autoFixed(weapon.bullet.range / 8f, 1) + " 格"));
+            snapshot.rows.add(new RowSnapshot("武器范围", formatStatValue(weapon.bullet.range / 8f) + " 格"));
             if(weapon.rotate){
                 snapshot.rows.add(new RowSnapshot("旋转速度", String.format("%.0f °/s", weapon.rotateSpeed * 60f)));
             }
-            snapshot.rows.add(new RowSnapshot("瞄准角", Strings.autoFixed(weapon.shootCone, 1) + "°"));
+            snapshot.rows.add(new RowSnapshot("瞄准角", formatStatValue(weapon.shootCone) + "°"));
             if(weapon.inaccuracy > 0f){
-                snapshot.rows.add(new RowSnapshot(Stat.inaccuracy.localized(), Strings.autoFixed(weapon.inaccuracy, 1) + "°"));
+                snapshot.rows.add(new RowSnapshot(Stat.inaccuracy.localized(), formatStatValue(weapon.inaccuracy) + "°"));
             }
             if(!weapon.alwaysContinuous && weapon.reload > 0 && !weapon.bullet.killShooter){
                 snapshot.rows.add(new RowSnapshot(Stat.reload.localized(), (weapon.mirror ? "2x " : "") + Strings.autoFixed(60f / weapon.reload * weapon.shoot.shots, 2) + " /秒"));
@@ -435,7 +445,7 @@ public class PatchViewer2Mod extends Mod{
     }
 
     private void addSectionRow(ContentSnapshot out, String sectionTitle, String label, String value){
-        if(sectionTitle == null || label == null || value == null || value.trim().isEmpty()) return;
+        if(sectionTitle == null || label == null || value == null) return;
         SectionSnapshot section = out.sectionByTitle(sectionTitle);
         if(section == null){
             section = new SectionSnapshot();
@@ -504,6 +514,21 @@ public class PatchViewer2Mod extends Mod{
 
     private String escape(String text){
         return text == null ? "" : text.replace("[", "[[");
+    }
+
+    private static String formatStatValue(float value){
+        if(value == 0f) return "0";
+        float absVal = Math.abs(value);
+        int decimalPlaces;
+        if(absVal >= 1f){
+            int intDigits = (int)Math.floor(Math.log10(absVal)) + 1;
+            decimalPlaces = Math.max(0, 3 - intDigits);
+        }else{
+            int leadingZeros = (int)Math.floor(-Math.log10(absVal));
+            decimalPlaces = leadingZeros + 3;
+        }
+        decimalPlaces = Math.min(decimalPlaces, 5);
+        return String.format("%." + decimalPlaces + "f", value);
     }
 
     private static class ContentSnapshot{
