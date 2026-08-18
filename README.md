@@ -1,67 +1,39 @@
 # PatchViewer / 补丁查看器
-<h1 align="center">
-  <a href="https://github.com/DeterMination-Wind/PatchViewer/releases/latest"><img src="https://img.shields.io/github/v/release/DeterMination-Wind/PatchViewer?display_name=release&label=Latest%20Release&color=green"></a>
-  <a href="https://github.com/DeterMination-Wind/PatchViewer/releases"><img src="https://img.shields.io/github/downloads/DeterMination-Wind/PatchViewer/total?label=Downloads&color=blue"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/DeterMination-Wind/PatchViewer?label=License"></a>
-  <a href="https://github.com/DeterMination-Wind/PatchViewer"><img src="https://img.shields.io/github/stars/DeterMination-Wind/PatchViewer?style=flat&label=Star%20this%20mod!&color=yellow"></a>
-</h1>
 
-PatchViewer is a Mindustry Java mod for viewing before/after diffs introduced by datapatches. It highlights patched content in the core database and can show a compact diff while hovering blocks or units in-game.
+> 让 datapatch 改了什么变得可见，不再靠猜测排查内容冲突。
 
-PatchViewer 是一个 Mindustry Java 模组，用于查看 datapatch 对内容造成的修改。它会在核心数据库中高亮补丁前后的属性差异，也可以在游戏内悬停建筑或单位时显示紧凑差异。
+PatchViewer 是一个 Mindustry 内容检查工具。它把补丁前后的建筑、单位和数据库属性放到同一个视野中，帮助玩家和模组作者理解当前数据到底发生了哪些变化。
 
-## Features / 功能
+它适合调试模组组合、检查数据补丁影响和复核建筑属性。PatchViewer 只展示差异，不会主动修改数据库或游戏规则。
 
-- Native core-database stats with in-place before/after diff panels
-- Native stat snapshots for modified, removed, and added values
-- Hold the PatchViewer quick-view key, default `Alt`, to inspect patched blocks or units under the cursor
-- Quick diff display modes: near-cursor HUD or inserted build-info panel
-- Configurable diff colors, HUD opacity, HUD width, and HUD background color
-- Compact icon/stack rendering for costs, inputs, outputs, mineable ores, weapons, and other icon-heavy stats
-- Patched database stats preserve the game's native icon sizes, wrapping, layout, and icon interactions
-- Merged desktop + Android release artifacts
+## 使用与安装
 
-- 保持核心数据库原版属性显示，并在变化属性位置插入修改前/修改后的差异面板
-- 对修改、删除、新增的原生属性快照显示前后对照
-- 长按 PatchViewer 快捷查看键，默认 `Alt`，可查看鼠标下建筑或单位的补丁差异
-- 快捷差异支持鼠标旁 HUD 与建造栏插入两种显示模式
-- 可配置 diff 颜色、HUD 透明度、HUD 宽度和 HUD 背景色
-- 对造价、输入、输出、可采集矿物、武器等图标密集属性使用紧凑 icon/stack 显示
-- 被补丁影响的数据库属性保留游戏原有的图标尺寸、换行、排版和图标交互
-- 同时输出桌面版和安卓版可用的合并产物
+安装 Release 中的 PatchViewer.jar 或 PatchViewer.zip，在游戏内启用后即可从数据库界面或游戏内内容信息查看差异。
 
-## Build / 构建
+## 构建
 
-Use the merged build task:
+~~~powershell
+.\gradlew.bat clean deploy
+~~~
 
-```powershell
-./gradlew.bat clean deploy
-```
+主要产物位于 dist/，版本化副本位于 构建/PatchViewer/。
 
-Artifacts will be generated here:
+## English
 
-- `dist/PatchViewer.jar`
-- `dist/PatchViewer.zip`
-- `../构建/PatchViewer/PatchViewer-v2.3.2.jar`
-- `../构建/PatchViewer/PatchViewer-v2.3.2.zip`
+> See what a datapatch changed instead of guessing through a content conflict.
 
-## Release / 发布
+PatchViewer is a Mindustry content-inspection tool. It places before-and-after values for blocks, units, and database entries in the same view, helping players and mod authors understand the actual effect of a data patch.
 
-GitHub Actions workflow: `.github/workflows/release.yml`
+It is useful for debugging mod combinations, reviewing patch impact, and checking content properties. PatchViewer displays differences; it does not rewrite the database or game rules.
 
-- Trigger: push tag `v*` or manual dispatch
-- Build: `clean deploy`
-- Release assets: `dist/*.jar` and `dist/*.zip`
-- CI verifies the merged jar contains a mod descriptor (`mod.json`/`mod.hjson`) and fails the build otherwise
+## Usage and install
 
-## Changelog / 更新日志
+Install PatchViewer.jar or PatchViewer.zip from Releases and enable it in-game. Differences are available from the database view and in-game content information.
 
-### v2.3.2
+## Build
 
-- 补充 `mod.json` 描述文件，与 `mod.hjson` 保持一致，合并 jar 同时携带两种描述；发布流程校验产物 jar 内含 `mod.json`/`mod.hjson`，缺失即构建失败。
-- Added a `mod.json` descriptor mirroring `mod.hjson`; merged jars now carry both descriptors, and the release workflow fails the build if the jar lacks `mod.json`/`mod.hjson`.
+~~~powershell
+.\gradlew.bat clean deploy
+~~~
 
-### v2.3.1
-
-- 性能优化：关闭时跳过基准捕获，并缓存构建信息差异。
-- Performance: skip baseline capture when disabled and cache build-info diffs.
+Main artifacts are written to dist/, with versioned copies in 构建/PatchViewer/.
