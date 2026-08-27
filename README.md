@@ -16,8 +16,6 @@ PatchViewer 是一个 Mindustry 内容检查工具。它把补丁前后的建筑
 .\gradlew.bat clean deploy
 ~~~
 
-主要产物位于 dist/，版本化副本位于 构建/PatchViewer/。
-
 ## English
 
 > See what a datapatch changed instead of guessing through a content conflict.
@@ -35,5 +33,3 @@ Install PatchViewer.jar or PatchViewer.zip from Releases and enable it in-game. 
 ~~~powershell
 .\gradlew.bat clean deploy
 ~~~
-
-Main artifacts are written to dist/, with versioned copies in 构建/PatchViewer/.
