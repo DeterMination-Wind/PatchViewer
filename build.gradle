@@ -3,7 +3,7 @@ plugins{
 }
 
 group = "determination"
-version = "2.3.2"
+version = "2.4.0"
 
 java{
     sourceCompatibility = JavaVersion.VERSION_1_8
