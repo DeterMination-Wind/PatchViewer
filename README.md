@@ -37,3 +37,7 @@ Install PatchViewer.jar or PatchViewer.zip from Releases and enable it in-game. 
 ~~~
 
 Main artifacts are written to dist/, with versioned copies in 构建/PatchViewer/.
+
+## 文档
+
+架构、开发、发布、测试与术语表见 [docs/README.md](docs/README.md)(Chinese)。仓库维护约束见 [AGENTS.md](AGENTS.md)。
