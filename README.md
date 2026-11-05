@@ -1,6 +1,7 @@
 # PatchViewer / 补丁查看器
 
-> [NOTE] 若有反馈，请发送反馈到bugsoc@qq.com / If you have any feedback, please send it to bugsoc@qq.com
+> [!NOTE]
+> 若有反馈，请发送反馈到bugsoc@qq.com / If you have any feedback, please send it to bugsoc@qq.com
 
 > 让 datapatch 改了什么变得可见，不再靠猜测排查内容冲突。
 
