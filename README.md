@@ -1,5 +1,7 @@
 # PatchViewer / 补丁查看器
 
+> [NOTE] 若有反馈，请发送反馈到bugsoc@qq.com / If you have any feedback, please send it to bugsoc@qq.com
+
 > 让 datapatch 改了什么变得可见，不再靠猜测排查内容冲突。
 
 PatchViewer 是一个 Mindustry 内容检查工具。它把补丁前后的建筑、单位和数据库属性放到同一个视野中，帮助玩家和模组作者理解当前数据到底发生了哪些变化。
