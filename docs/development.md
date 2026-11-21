@@ -38,12 +38,12 @@
 - **单文件架构**:全部逻辑在 `patchviewer.PatchViewerMod` 一个类里,数据类型用 private static class / enum 表达(`ContentSnapshot`、`ContentDiff`、`CompactDiff`、`RowKind` 等)。新增能力优先作为私有方法或内部类加入,遵循既有分区:快照 → 差异 → 渲染 → 设置。
 - **反射 + 降级**:游戏内部字段(`PlacementFragment`、`ContentInfoDialog`)与第三方模组(MI2U)只经反射访问;所有反射调用必须 try/catch,缺类时置标志位并不再重试(如 `mi2uClassMissing`)。
 - **文案走 bundle**:用户可见文案用 `bundle(key, fallback)` 取值;新增 key 必须同步写进 `assets/bundles/` 下全部六个语言文件。
-- **布局细节有约定**:`->` 箭头必须留在旧值所在行,空间不足时只在箭头与新值之间换行;相关逻辑集中在 `wrapNativeStatInset`、`renderCompactStackDiff`、`AtomicStatFlow`,宽度测量用离屏 `pack()`。改动换行行为时六处展示(快捷 HUD、详细对话框、原生属性行、文本差异、建造栏注入、建造成本)要保持一致。
+- **布局细节有约定**:`->` 箭头必须留在旧值所在行,空间不足时只在箭头与新值之间换行;相关逻辑集中在 `wrapNativeStatInset`、`renderCompactStackDiff`、`AtomicStatFlow`、`addHiddenEntryRow`,宽度测量用离屏 `pack()`。改动换行行为时各展示处(快捷 HUD、详细对话框、原生属性行、文本差异、建造栏注入、建造成本、隐藏词条)要保持一致。
 - 保持既有大括号/缩进风格;变更聚焦,不顺手重构无关代码。
 
 ## 调试建议
 
-- 找一个会修改内容属性的 datapatch 模组做对照;必须先进入一局(WorldLoadEvent 之后才有 after 快照与差异),再打开数据库或内容信息查看。
+- 找一个会修改内容属性的 datapatch(编辑器 Map Assets → Patches 写入地图/存档,或由服务端下发)做对照;必须先进入一局(WorldLoadEvent 之后才有 after 快照与差异),再打开数据库或内容信息查看。
 - 快捷差异不显示时按序检查:总开关 → 是否在局内 → 是否按住 `patchviewer-quick-view`(默认左 Alt)→ 是否有对话框/输入框抢占焦点 → 该内容是否真的存在差异。
 - 反射目标会随游戏版本变化:`findQuickTarget()` 与 `showPatched()` 失败时静默降级,可临时插 `Log.debug` 定位。
 - 验证聚合形态:改动 `init()` / `buildSettings()` 结构后,回 Neon 执行 `python tools/update_submods.py --only pv --verify-build`,确认注入与结构断言通过(见 [architecture.md](architecture.md))。

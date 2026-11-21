@@ -5,7 +5,7 @@
 ## 项目形态
 
 ### datapatch
-修改游戏数据库对象/属性的补丁内容。模组在内容加载后、进图阶段改写建筑/单位等的属性与描述;PatchViewer 抓取修改前后两份快照并展示差异。本工具只读展示,不生成也不改写 datapatch。
+修改游戏数据库对象/属性的补丁内容,由地图/存档的 patch 资产携带或由服务端下发(模组目录不存放 patch)。补丁在内容加载后、进图阶段改写建筑/单位等的属性与描述;PatchViewer 抓取修改前后两份快照并展示差异。本工具只读展示,不生成也不改写 datapatch。
 
 ### 基线快照(baseline snapshot)
 `ClientLoadEvent` 后对全部 `UnlockableContent` 抓取的"补丁前"属性集合(`ContentSnapshot`):标题、描述、详情、建造成本(反射读 `requirements`)与全部属性行。进图后不重建,是差异的左值来源。
@@ -23,6 +23,9 @@
 
 ### 快捷差异(quick diff / CompactDiff)
 局内长按快捷键(默认左 Alt,`patchviewer-quick-view`)时显示的紧凑差异列表,按 Added / Modified / Removed 三组归纳。两种显示模式:`cursor`(跟随鼠标的 HUD)与 `buildinfo`(注入建造栏信息表)。
+
+### 隐藏词条(hidden entry)
+datapatch 改了、但数据库没有对应 Stat 行的建筑字段差异。数据来自游戏 `DataPatcher.usedpatches` 里的 `PatchRecord`(`target` + `Field` + 补丁前值),只在确实变化时单独成节展示;范围仅限建筑自身字段与一层 `DrawBlock`/`BulletType` 子对象,详见[架构](architecture.md#隐藏词条非词条字段差异)。
 
 ### RowKind
 属性行的分类枚举(TEXT、STACK_LIST、BUILD_COST、NATIVE_PANEL、AMMO_PANEL、WEAPON_PANEL、ABILITY_PANEL),决定该行的比较方式与渲染方式,例如 STACK_LIST 按物品条目逐个匹配增/删/改。

@@ -4,7 +4,7 @@
 
 PatchViewer 是一个 Mindustry 内容检查工具。它把补丁前后的建筑、单位和数据库属性放到同一个视野中，帮助玩家和模组作者理解当前数据到底发生了哪些变化。
 
-它适合调试模组组合、检查数据补丁影响和复核建筑属性。PatchViewer 只展示差异，不会主动修改数据库或游戏规则。
+它适合调试模组组合、检查数据补丁影响和复核建筑属性。PatchViewer 只展示差异，不会主动修改数据库或游戏规则。补丁改到建筑数据库词条之外的隐藏字段（如 `solid`、`destroyBullet.damage`）时，也会在确实变化的前提下单独列出 `原值 -> 新值`；无法稳定转成文本的整对象/容器替换显示为“已变更”。
 
 ## 使用与安装
 
@@ -22,7 +22,7 @@ PatchViewer 是一个 Mindustry 内容检查工具。它把补丁前后的建筑
 
 PatchViewer is a Mindustry content-inspection tool. It places before-and-after values for blocks, units, and database entries in the same view, helping players and mod authors understand the actual effect of a data patch.
 
-It is useful for debugging mod combinations, reviewing patch impact, and checking content properties. PatchViewer displays differences; it does not rewrite the database or game rules.
+It is useful for debugging mod combinations, reviewing patch impact, and checking content properties. PatchViewer displays differences; it does not rewrite the database or game rules. Changes to block fields that have no database stat row (such as `solid` or `destroyBullet.damage`) are listed separately with `old -> new`, but only when they actually changed; whole-object/container replacements with no stable text form show a single "changed" marker.
 
 ## Usage and install
 

@@ -40,6 +40,16 @@ WorldLoadEvent  ─► rebuildAfterSnapshots    ─► afterSnapshots      (补�
    - `cursor`:跟随鼠标的悬浮 HUD(`quickHud` ScrollPane,宽度/透明度/背景色可调)。
    - `buildinfo`:把差异表注入建造栏信息的 `topTable`(含 MI2U 接管时的 `buildt`)。
 
+## 隐藏词条(非词条字段差异)
+
+数据库只展示 `content.stats` 里登记的行;datapatch 改到没有对应 Stat 行的字段(如 `solid`、`rotate`、`configurable`、`destroyBullet.damage`)时,常规差异管线看不到。隐藏词条就是补上这一段:
+
+- **数据来源**:反射 `Vars.state.data.patcher.usedpatches`(v157 形态为 `state.patcher`)。集合里的 `PatchRecord` 保存 `target` + `java.lang.reflect.Field` + 赋值前的旧值;新值直接 `Field.get(target)` 读取。**不调用 `unapply()`**,不改游戏状态。
+- **范围**:仅 `Block` 自身字段,以及建筑直接字段指向的一层子对象(`DrawBlock` / `BulletType`;同一子对象被多个建筑共用时跳过归属)。数组/Seq 等容器字段发生整体替换时只显示"已变更";`requirements`/`attributes`/`ammoTypes`/`consumes` 等 map/consumer 补丁、`afterPatch()` 派生字段、补丁新增内容都不在范围内,属已知缺口。`consPower`/`consumeBuilder` 等字段本身带 `@NoPatch`,引擎会拒绝其嵌套修改,因此不出现在结果里。
+- **去重**:字段能映射到可见 Stat(`health`/`armor`/`size`/`buildTime`/`itemCapacity`/`liquidCapacity`/`unitCapModifier`、按声明类区分的 `range`/`reload`、炮塔的 `inaccuracy`/`targetAir`/`targetGround`/`ammoPerShot`/`heatRequirement`/`maxHeatEfficiency`,以及反射解析的 `StatExt.canOverdrive`/`mendReload`)且该 Stat 行已经出现在本次可见差异里时,不再重复展示;`localizedName`/`name`/`description`/`details`/`requirements` 五个专用通道直接跳过。无法渲染的值与格式化后相同的值折叠成单条"已变更"。
+- **展示**:只有确实发生变化时才出现。数据库页在原生词条之后追加带 `name = patchviewer-hidden-section` 的小节;快捷 HUD / 建造栏在 Added / Modified / Removed 之后追加固定表头的小节。无变化时两个界面与之前完全一致。
+- **刷新**:`WorldLoadEvent` 后构建一次;局内按住快捷查看键时每 60 帧按 `patcher` 身份 + 记录集合签名检查一次,数据库对话框每次打开强制刷新,`ResetEvent` 清空。编辑器里运行时重新应用补丁只会刷新隐藏小节,HUD 的可见差异(`afterSnapshots` / `diffsByContent`)仍来自上次进图,需要重新进图才会同步;全部反射失败只关闭该功能,不影响常规差异。
+
 ## 设置系统
 
 设置直接使用 `Core.settings` + `SettingsMenuDialog.SettingsTable`,由 `buildSettings()` 构建:
@@ -47,6 +57,7 @@ WorldLoadEvent  ─► rebuildAfterSnapshots    ─► afterSnapshots      (补�
 | key | 含义 |
 | --- | --- |
 | `patchviewer-enabled` | 总开关(关闭后内容信息完全回到原版行为) |
+| `patchviewer-hidden-entries` | 隐藏词条开关(默认开;关闭后只影响非词条字段小节,HUD 与数据库页都不再显示) |
 | `patchviewer-quick-display-mode` | 快捷显示模式:`cursor` / `buildinfo` |
 | `patchviewer-quick-hud-opacity` / `-width` / `-background` | HUD 透明度(20–100)、宽度(100–900px)、背景色 |
 | `patchviewer-color-removed` / `-modified-old` / `-modified-new` / `-added` | 删除 / 修改前 / 修改后 / 新增的染色 |
